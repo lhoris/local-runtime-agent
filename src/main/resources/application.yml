@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: local-runtime-agent
+
+# NOTE: Full configuration (datasource, Flyway, agent polling intervals, timeouts,
+# profiles) is owned by Task #14. This is a minimal placeholder so the app boots.
