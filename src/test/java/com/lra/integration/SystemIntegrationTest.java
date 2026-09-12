@@ -14,12 +14,12 @@ import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.process.StopStrategy;
 import com.lra.agent.sync.DBSyncManager;
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.AgentStatus;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ModelParameter;
 import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.AgentInfoRepository;
-import com.lra.db.repository.AgentStatusRepository;
+import com.lra.db.repository.AgentRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
@@ -62,11 +62,11 @@ class SystemIntegrationTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    AgentInfoRepository agentInfoRepository;
+    AgentRepository agentRepository;
     @Autowired
     ProcessConfigRepository processConfigRepository;
     @Autowired
-    AgentStatusRepository agentStatusRepository;
+    ModelProcessRepository modelProcessRepository;
     @Autowired
     CommandRepository commandRepository;
     @Autowired
@@ -101,9 +101,9 @@ class SystemIntegrationTest {
         executionLogRepository.deleteAll();
         modelParameterRepository.deleteAll();
         commandRepository.deleteAll();
-        agentStatusRepository.deleteAll();
+        modelProcessRepository.deleteAll();
         processConfigRepository.deleteAll();
-        agentInfoRepository.deleteAll();
+        agentRepository.deleteAll();
     }
 
     /**
@@ -113,9 +113,9 @@ class SystemIntegrationTest {
      */
     @Test
     void s1_agentStatusIsVisibleToServer() throws Exception {
-        agentInfoRepository.save(newAgent("agent-1", "ml-server-01"));
+        agentRepository.save(newAgent("agent-1", "ml-server-01"));
         processConfigRepository.save(newProcess("proc-1", "agent-1", "INFERENCE"));
-        agentStatusRepository.save(newStatus("st-1", "agent-1", "proc-1", "RUNNING", "HEALTHY", 12345));
+        modelProcessRepository.save(newStatus("proc-1", "agent-1", "RUNNING", "HEALTHY", 12345));
 
         ResponseEntity<String> response = rest.getForEntity("/api/v1/agents", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -140,7 +140,7 @@ class SystemIntegrationTest {
      */
     @Test
     void s2_commandIsPublishedAndPollableByAgent() throws Exception {
-        agentInfoRepository.save(newAgent("agent-2", "ml-server-02"));
+        agentRepository.save(newAgent("agent-2", "ml-server-02"));
         processConfigRepository.save(newProcess("proc-2", "agent-2", "INFERENCE"));
 
         Map<String, Object> body = Map.of(
@@ -167,7 +167,7 @@ class SystemIntegrationTest {
      */
     @Test
     void s3_parameterUpdateVersionsAndQueuesRestart() throws Exception {
-        agentInfoRepository.save(newAgent("agent-3", "ml-server-03"));
+        agentRepository.save(newAgent("agent-3", "ml-server-03"));
         processConfigRepository.save(newProcess("proc-3", "agent-3", "INFERENCE"));
 
         postParameter("proc-3", "temperature", "0.7", false);
@@ -204,7 +204,7 @@ class SystemIntegrationTest {
 
         String script = new ClassPathResource("fixtures/test_process.py").getFile().getAbsolutePath();
 
-        agentInfoRepository.save(newAgent(agentId, "ml-server-s4"));
+        agentRepository.save(newAgent(agentId, "ml-server-s4"));
         ProcessConfig config = newProcess(modelId, agentId, "INFERENCE");
         config.setExecutablePath(pythonExe);
         config.setCommandArgs(objectMapper.writeValueAsString(List.of(script)));
@@ -283,8 +283,8 @@ class SystemIntegrationTest {
     }
 
     private String agentState(String agentId, String modelId) {
-        return agentStatusRepository.findById(agentId + ":" + modelId)
-                .map(AgentStatus::getState)
+        return modelProcessRepository.findById(agentId + ":" + modelId)
+                .map(ModelProcess::getState)
                 .orElse(null);
     }
 

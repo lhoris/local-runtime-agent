@@ -7,12 +7,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.lra.db.entity.AgentInfo;
-import com.lra.db.entity.AgentStatus;
+import com.lra.db.entity.Agent;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.AgentInfoRepository;
-import com.lra.db.repository.AgentStatusRepository;
+import com.lra.db.repository.AgentRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
@@ -36,10 +36,10 @@ class ApiControllerTest {
     MockMvc mockMvc;
 
     @Autowired
-    AgentInfoRepository agentInfoRepository;
+    AgentRepository agentRepository;
 
     @Autowired
-    AgentStatusRepository agentStatusRepository;
+    ModelProcessRepository modelProcessRepository;
 
     @Autowired
     CommandRepository commandRepository;
@@ -160,11 +160,11 @@ class ApiControllerTest {
     }
 
     private void seedAgent(String agentId, String hostname) {
-        AgentInfo agent = new AgentInfo();
+        Agent agent = new Agent();
         agent.setAgentId(agentId);
         agent.setHostname(hostname);
         agent.setOsType("LINUX");
-        agentInfoRepository.save(agent);
+        agentRepository.save(agent);
     }
 
     private void seedProcess(String processId, String agentId) {
@@ -178,14 +178,13 @@ class ApiControllerTest {
 
     private void seedStatus(String statusId, String agentId, String processId,
                             String state, String health, int pid) {
-        AgentStatus status = new AgentStatus();
-        status.setStatusId(statusId);
-        status.setAgentId(agentId);
+        ModelProcess status = new ModelProcess();
         status.setProcessId(processId);
+        status.setAgentId(agentId);
         status.setState(state);
         status.setHealthStatus(health);
         status.setPid(pid);
-        agentStatusRepository.save(status);
+        modelProcessRepository.save(status);
     }
 
     private void seedLog(String logId, String agentId, String processId) {

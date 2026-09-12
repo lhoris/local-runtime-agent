@@ -1,7 +1,7 @@
 package com.lra.integration.utils;
 
-import com.lra.db.entity.AgentInfo;
-import com.lra.db.entity.AgentStatus;
+import com.lra.db.entity.Agent;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.ProcessConfig;
 
 import java.time.Duration;
@@ -22,8 +22,8 @@ public final class IntegrationTestHelper {
     private IntegrationTestHelper() {
     }
 
-    public static AgentInfo newAgent(String agentId, String hostname) {
-        AgentInfo agent = new AgentInfo();
+    public static Agent newAgent(String agentId, String hostname) {
+        Agent agent = new Agent();
         agent.setAgentId(agentId);
         agent.setHostname(hostname);
         agent.setOsType("LINUX");
@@ -43,12 +43,11 @@ public final class IntegrationTestHelper {
         return config;
     }
 
-    public static AgentStatus newStatus(String statusId, String agentId, String processId,
-                                        String state, String healthStatus, Integer pid) {
-        AgentStatus status = new AgentStatus();
-        status.setStatusId(statusId);
-        status.setAgentId(agentId);
+    public static ModelProcess newStatus(String processId, String agentId,
+                                         String state, String healthStatus, Integer pid) {
+        ModelProcess status = new ModelProcess();
         status.setProcessId(processId);
+        status.setAgentId(agentId);
         status.setState(state);
         status.setHealthStatus(healthStatus);
         status.setPid(pid);
