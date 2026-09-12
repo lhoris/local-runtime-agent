@@ -4,10 +4,10 @@ import com.lra.common.dto.AgentDetailDto;
 import com.lra.common.dto.AgentDto;
 import com.lra.common.dto.AgentsResponse;
 import com.lra.common.dto.ProcessDto;
-import com.lra.db.entity.AgentInfo;
-import com.lra.db.entity.AgentStatus;
-import com.lra.db.repository.AgentInfoRepository;
-import com.lra.db.repository.AgentStatusRepository;
+import com.lra.db.entity.Agent;
+import com.lra.db.entity.ModelProcess;
+import com.lra.db.repository.AgentRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.server.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,20 +22,20 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AgentService {
 
-    private final AgentInfoRepository agentInfoRepository;
-    private final AgentStatusRepository agentStatusRepository;
+    private final AgentRepository agentRepository;
+    private final ModelProcessRepository modelProcessRepository;
 
-    public AgentService(AgentInfoRepository agentInfoRepository,
-                        AgentStatusRepository agentStatusRepository) {
-        this.agentInfoRepository = agentInfoRepository;
-        this.agentStatusRepository = agentStatusRepository;
+    public AgentService(AgentRepository agentRepository,
+                        ModelProcessRepository modelProcessRepository) {
+        this.agentRepository = agentRepository;
+        this.modelProcessRepository = modelProcessRepository;
     }
 
     /**
      * List all agents with their processes (GET /api/v1/agents).
      */
     public AgentsResponse listAgents() {
-        List<AgentDto> agents = agentInfoRepository.findAll().stream()
+        List<AgentDto> agents = agentRepository.findAll().stream()
                 .map(this::toAgentDto)
                 .toList();
         return new AgentsResponse(agents);
@@ -45,7 +45,7 @@ public class AgentService {
      * Fetch a single agent's detail (GET /api/v1/agents/{agentId}).
      */
     public AgentDetailDto getAgent(String agentId) {
-        AgentInfo agent = agentInfoRepository.findById(agentId)
+        Agent agent = agentRepository.findById(agentId)
                 .orElseThrow(() -> ApiException.notFound("Agent not found: " + agentId));
         List<ProcessDto> processes = toProcessDtos(agentId);
         return new AgentDetailDto(
@@ -60,7 +60,7 @@ public class AgentService {
                 processes);
     }
 
-    private AgentDto toAgentDto(AgentInfo agent) {
+    private AgentDto toAgentDto(Agent agent) {
         return new AgentDto(
                 agent.getAgentId(),
                 agent.getHostname(),
@@ -70,12 +70,12 @@ public class AgentService {
     }
 
     private List<ProcessDto> toProcessDtos(String agentId) {
-        return agentStatusRepository.findByAgentId(agentId).stream()
+        return modelProcessRepository.findByAgentId(agentId).stream()
                 .map(this::toProcessDto)
                 .toList();
     }
 
-    private ProcessDto toProcessDto(AgentStatus status) {
+    private ProcessDto toProcessDto(ModelProcess status) {
         return new ProcessDto(
                 status.getProcessId(),
                 status.getState(),
@@ -85,8 +85,8 @@ public class AgentService {
     }
 
     private Instant lastHeartbeat(String agentId) {
-        return agentStatusRepository.findByAgentId(agentId).stream()
-                .map(AgentStatus::getLastHeartbeat)
+        return modelProcessRepository.findByAgentId(agentId).stream()
+                .map(ModelProcess::getLastHeartbeat)
                 .filter(java.util.Objects::nonNull)
                 .max(java.time.Instant::compareTo)
                 .orElse(null);
@@ -97,7 +97,7 @@ public class AgentService {
      * Worst observed health wins; no status rows means UNKNOWN.
      */
     private String deriveAgentStatus(String agentId) {
-        List<AgentStatus> statuses = agentStatusRepository.findByAgentId(agentId);
+        List<ModelProcess> statuses = modelProcessRepository.findByAgentId(agentId);
         if (statuses.isEmpty()) {
             return "UNKNOWN";
         }

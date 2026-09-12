@@ -5,18 +5,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A PC-unit agent registered with the central server (ARCHITECTURE.md §5.1 agent_info).
+ * A PC-unit agent registered with the central server (ARCHITECTURE.md §5.1 agent).
  */
 @Entity
-@Table(name = "TB_M26_AGENT_INFO")
-public class AgentInfo {
+@Table(name = "TB_M26_AGENT")
+public class Agent {
 
     @Id
     @NotBlank
@@ -91,7 +89,7 @@ public class AgentInfo {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof AgentInfo other)) {
+        if (!(o instanceof Agent other)) {
             return false;
         }
         return agentId != null && agentId.equals(other.agentId);

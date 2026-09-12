@@ -5,32 +5,27 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Latest observed runtime status of a managed process
- * (ARCHITECTURE.md §5.1 agent_status).
+ * Latest observed runtime status of a managed model process
+ * (ARCHITECTURE.md §5.1 model_process).
  */
 @Entity
-@Table(name = "TB_M26_AGENT_STATUS")
-public class AgentStatus {
+@Table(name = "TB_M26_MODEL_PROCESS")
+public class ModelProcess {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "STATUS_ID", length = 64)
-    private String statusId;
+    @Column(name = "PROCESS_ID", length = 64)
+    private String processId;
 
     @NotBlank
     @Column(name = "AGENT_ID", length = 64, nullable = false)
     private String agentId;
-
-    @Column(name = "PROCESS_ID", length = 64)
-    private String processId;
 
     @Column(name = "PROCESS_STATE", length = 32)
     private String state;
@@ -65,12 +60,12 @@ public class AgentStatus {
     @Column(name = "ERROR_MESSAGE", columnDefinition = "text")
     private String errorMessage;
 
-    public String getStatusId() {
-        return statusId;
+    public String getProcessId() {
+        return processId;
     }
 
-    public void setStatusId(String statusId) {
-        this.statusId = statusId;
+    public void setProcessId(String processId) {
+        this.processId = processId;
     }
 
     public String getAgentId() {
@@ -79,14 +74,6 @@ public class AgentStatus {
 
     public void setAgentId(String agentId) {
         this.agentId = agentId;
-    }
-
-    public String getProcessId() {
-        return processId;
-    }
-
-    public void setProcessId(String processId) {
-        this.processId = processId;
     }
 
     public String getState() {
@@ -182,14 +169,14 @@ public class AgentStatus {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof AgentStatus other)) {
+        if (!(o instanceof ModelProcess other)) {
             return false;
         }
-        return statusId != null && statusId.equals(other.statusId);
+        return processId != null && processId.equals(other.processId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(statusId);
+        return Objects.hashCode(processId);
     }
 }

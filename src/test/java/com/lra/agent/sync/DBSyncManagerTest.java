@@ -11,7 +11,7 @@ import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.AgentStatusRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ProcessConfigRepository;
@@ -41,7 +41,7 @@ class DBSyncManagerTest {
 
     @Mock private ProcessManager processManager;
     @Mock private ProcessConfigRepository processConfigRepository;
-    @Mock private AgentStatusRepository agentStatusRepository;
+    @Mock private ModelProcessRepository modelProcessRepository;
     @Mock private CommandRepository commandRepository;
     @Mock private ExecutionLogRepository executionLogRepository;
     @Mock private HealthChecker healthChecker;
@@ -55,7 +55,7 @@ class DBSyncManagerTest {
                 AGENT_ID,
                 processManager,
                 processConfigRepository,
-                agentStatusRepository,
+                modelProcessRepository,
                 commandRepository,
                 executionLogRepository);
     }
@@ -85,10 +85,9 @@ class DBSyncManagerTest {
 
         dbSyncManager.syncAgentStatus();
 
-        verify(agentStatusRepository).save(argThat(record ->
-                record.getStatusId().equals(AGENT_ID + ":model-1")
+        verify(modelProcessRepository).save(argThat(record ->
+                record.getProcessId().equals("model-1")
                         && record.getAgentId().equals(AGENT_ID)
-                        && record.getProcessId().equals("model-1")
                         && record.getState().equals("RUNNING")
                         && record.getPid() == 1234
                         && record.getMemoryMb() == 2048));

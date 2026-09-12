@@ -7,11 +7,11 @@ import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.process.StopStrategy;
 import com.lra.common.enums.CommandStatus;
 import com.lra.common.enums.CommandType;
-import com.lra.db.entity.AgentStatus;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.AgentStatusRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ProcessConfigRepository;
@@ -47,7 +47,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     private final String agentId;
     private final ProcessManager processManager;
     private final ProcessConfigRepository processConfigRepository;
-    private final AgentStatusRepository agentStatusRepository;
+    private final ModelProcessRepository modelProcessRepository;
     private final CommandRepository commandRepository;
     private final ExecutionLogRepository executionLogRepository;
 
@@ -57,13 +57,13 @@ public class DefaultDBSyncManager implements DBSyncManager {
     public DefaultDBSyncManager(@Value("${agent.id}") String agentId,
                                 ProcessManager processManager,
                                 ProcessConfigRepository processConfigRepository,
-                                AgentStatusRepository agentStatusRepository,
+                                ModelProcessRepository modelProcessRepository,
                                 CommandRepository commandRepository,
                                 ExecutionLogRepository executionLogRepository) {
         this.agentId = agentId;
         this.processManager = processManager;
         this.processConfigRepository = processConfigRepository;
-        this.agentStatusRepository = agentStatusRepository;
+        this.modelProcessRepository = modelProcessRepository;
         this.commandRepository = commandRepository;
         this.executionLogRepository = executionLogRepository;
     }
@@ -84,10 +84,9 @@ public class DefaultDBSyncManager implements DBSyncManager {
         List<ProcessStatus> statuses = processManager.getAllStatus();
         Instant now = Instant.now();
         for (ProcessStatus status : statuses) {
-            AgentStatus record = new AgentStatus();
-            record.setStatusId(agentId + ":" + status.getModelId());
-            record.setAgentId(agentId);
+            ModelProcess record = new ModelProcess();
             record.setProcessId(status.getModelId());
+            record.setAgentId(agentId);
             record.setState(status.getState() != null ? status.getState().toString() : null);
             record.setPid(status.getPid());
             record.setCpuPercent(status.getCpuPercent());
@@ -95,7 +94,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
             record.setUptimeSec(status.getUptimeSec());
             record.setLastHealthCheck(now);
             record.setLastHeartbeat(now);
-            agentStatusRepository.save(record);
+            modelProcessRepository.save(record);
         }
     }
 
