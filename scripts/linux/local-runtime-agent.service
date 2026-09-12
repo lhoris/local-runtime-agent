@@ -1,0 +1,21 @@
+[Unit]
+Description=Local Runtime Agent (PC-unit Python model process manager)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lra
+Group=lra
+WorkingDirectory=/opt/lra-agent
+ExecStart=/opt/lra-agent/bin/start.sh
+# Environment (DB_HOST, DB_USER, ...) is read from this file if present.
+EnvironmentFile=-/etc/lra-agent/agent.env
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

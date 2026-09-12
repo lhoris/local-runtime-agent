@@ -1,0 +1,44 @@
+[Unit]
+Description=Local Runtime Agent - Python AI Model Process Manager
+Documentation=https://github.com/lhori/local-runtime-agent
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lra-agent
+Group=lra-agent
+WorkingDirectory=/opt/lra-agent
+
+# Runtime configuration (DB credentials, profile, ports) is supplied here.
+# install-service.sh creates this file from .env.example on first install.
+EnvironmentFile=/etc/lra-agent/lra-agent.env
+# Default to the production profile; override via the EnvironmentFile above.
+Environment=SPRING_PROFILES_ACTIVE=prod
+
+ExecStart=/usr/bin/java -jar lib/local-runtime-agent.jar
+
+# Restart on any non-clean exit; the agent's own auto-restart handles child
+# processes, this handles the JVM itself crashing.
+Restart=always
+RestartSec=5
+
+# Give the JVM time to shut managed processes down gracefully.
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lra-agent
+
+# --- Hardening --------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+# Allow writing logs under the working directory only.
+ReadWritePaths=/opt/lra-agent/logs
+
+[Install]
+WantedBy=multi-user.target
+# Convenience short name: enables `systemctl {start,status} lra-agent`.
+Alias=lra-agent.service

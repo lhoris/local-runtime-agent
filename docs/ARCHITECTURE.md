@@ -6,6 +6,22 @@
 
 ---
 
+## Quick Start (요약)
+
+Agent는 중앙 서버 없이도 자체 동작하는 자율 루프(Autonomous Loop)이며, 공용 DB 폴링으로 명령/상태를 교환한다.
+
+- **Process Manager** — `ProcessBuilder`로 프로세스 start/stop/restart, PID 추출
+- **Health Checker** — PID liveness + crash 감지
+- **DB Sync Manager** — 30초 주기 폴링으로 대기 명령(START/STOP/RESTART) 처리
+- **State Manager** — STOPPED → STARTING → RUNNING → STOPPING, 이상 시 CRASHED
+- **Parameter Manager** — JSON 기반 동적 파라미터, 재시작 시 적용
+- **Auto-restart** — crash 감지 시 재시작 횟수 한도 내 자동 복구
+
+핵심 흐름: `DB 명령 → 폴링 → ProcessManager 실행 → 상태 갱신 → DB 반영`. 상세는 아래 12개 섹션 참고.
+빌드·실행·배포는 [`../README.md`](../README.md) 및 [`../DEPLOYMENT.md`](../DEPLOYMENT.md) 참고.
+
+---
+
 ## 목차
 
 1. [시스템 개요](#1-시스템-개요)
@@ -153,9 +169,8 @@ STOPPED → STARTING → RUNNING → STOPPING
 
 ```java
 public interface DBSyncManager {
-    void syncAgentStatus();  // Agent 상태를 DB에 기록
+    void syncAgentStatus();  // Agent 상태를 DB에 기록 (agent_status + agent_info.last_heartbeat 포함)
     void pollPendingCommands();  // DB의 미처리 명령 확인
-    void updateHeartbeat();  // 살아있음 신호
     void logExecution(ExecutionResult result);  // 결과 기록
 }
 ```
@@ -312,19 +327,6 @@ CREATE TABLE model_parameters (
 );
 ```
 
-#### heartbeat_log
-```sql
-CREATE TABLE heartbeat_log (
-    heartbeat_id VARCHAR(64) PRIMARY KEY,
-    agent_id VARCHAR(64) NOT NULL,
-    heartbeat_time TIMESTAMP,
-    agent_status JSON,  -- 전체 상태 스냅샷 (선택적 압축)
-    created_at TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agent_info(agent_id),
-    INDEX idx_agent_time (agent_id, heartbeat_time)
-);
-```
-
 #### execution_log (감사 로그)
 ```sql
 CREATE TABLE execution_log (
@@ -375,8 +377,6 @@ GROUP BY ai.agent_id, pc.process_id;
 - `agent_id`: 폴링 성능 중요
 - `command_status, agent_id`: 폴링 쿼리 최적화
 - `process_id, created_at`: 로그 조회 성능
-- `agent_id, heartbeat_time`: 상태 타임시리즈 조회
-
 ---
 
 ## 6. API 명세
@@ -523,8 +523,7 @@ DEGRADED
 3. **AutoRestart**: 필요시 자동 재시작
 4. **PollDB**: 미처리 명령 확인 (`command_status = 'PENDING'`)
 5. **ExecuteCommands**: 명령 순차 실행
-6. **SyncStatus**: 현재 상태를 `agent_status`에 기록
-7. **Heartbeat**: `heartbeat_log`에 기록
+6. **SyncStatus**: 현재 상태를 `agent_status`에 기록하고, `agent_info.last_heartbeat` 업데이트
 
 ### 7.3 명령 처리 흐름 (START 예시)
 
