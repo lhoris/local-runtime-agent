@@ -95,7 +95,7 @@ public class ParameterService {
                 param.getParamType(),
                 param.getVersion(),
                 param.getIsActive(),
-                param.getUpdatedAt());
+                null);
     }
 
     private String inferType(String value) {

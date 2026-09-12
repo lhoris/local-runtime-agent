@@ -92,6 +92,6 @@ public class CommandService {
                 log.getStdoutPreview(),
                 log.getStderrPreview(),
                 log.getDurationSec(),
-                log.getCreatedAt());
+                null);
     }
 }
