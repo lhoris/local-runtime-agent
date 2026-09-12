@@ -222,161 +222,254 @@ public interface HealthAdapter {
 
 ---
 
-## 5. 데이터베이스 스키마
+## 5. 데이터베이스 스키마 (엔터프라이즈 표준)
 
-### 5.1 핵심 테이블
+### 5.1 테이블 설계 원칙
 
-#### agent_info
+- 테이블명 프리픽스: `TB_M26_`
+- 컬럼 순서: Audit (14개) → PK → Attributes
+- 제약조건: PK만 사용 (FK, CHECK 제거)
+- Audit 항목: CREATED_*, LAST_UPDATED_*, DATA_END_*
+
+### 5.2 핵심 테이블
+
+#### TB_M26_AGENT_INFO
 ```sql
-CREATE TABLE agent_info (
-    agent_id VARCHAR(64) PRIMARY KEY,
-    hostname VARCHAR(256),
-    os_type VARCHAR(32),  -- WINDOWS, LINUX
-    ip_address VARCHAR(45),
-    spring_boot_version VARCHAR(32),
-    installed_at TIMESTAMP,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
+CREATE TABLE TB_M26_AGENT_INFO (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    AGENT_ID VARCHAR(22) PRIMARY KEY COMMENT 'Agent ID',
+    
+    -- Attributes
+    HOSTNAME VARCHAR(256) COMMENT 'Agent 호스트명',
+    OS_TYPE VARCHAR(32) COMMENT 'OS 유형 (WINDOWS, LINUX)',
+    IP_ADDRESS VARCHAR(45) COMMENT 'IP 주소',
+    SPRING_BOOT_VERSION VARCHAR(32) COMMENT 'Spring Boot 버전',
+    INSTALLED_AT DATETIME COMMENT 'Agent 설치일시'
+) COMMENT='Local Runtime Agent 정보';
 ```
 
-#### process_config
+#### TB_M26_PROCESS_CONFIG
 ```sql
-CREATE TABLE process_config (
-    process_id VARCHAR(64) PRIMARY KEY,
-    agent_id VARCHAR(64) NOT NULL,
-    model_name VARCHAR(256),
-    model_type VARCHAR(64),  -- INFERENCE, TRAINING, RUNTIME
-    executable_path VARCHAR(512),  -- Python 스크립트 경로
-    working_directory VARCHAR(512),
-    command_args TEXT,  -- JSON 배열
-    env_vars TEXT,  -- JSON 객체
-    auto_restart BOOLEAN DEFAULT true,
-    max_restart_attempts INT DEFAULT 3,
-    restart_delay_sec INT DEFAULT 10,
-    timeout_sec INT DEFAULT 3600,
-    memory_limit_mb INT,
-    cpu_limit_percent INT,
-    health_check_enabled BOOLEAN DEFAULT true,
-    health_check_interval_sec INT DEFAULT 30,
-    health_check_endpoint VARCHAR(512),  -- 선택적 REST API
-    metadata JSON,  -- 모델별 추가 정보
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agent_info(agent_id)
-);
+CREATE TABLE TB_M26_PROCESS_CONFIG (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    PROCESS_ID VARCHAR(22) PRIMARY KEY COMMENT '프로세스 ID',
+    
+    -- Attributes
+    AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
+    MODEL_NAME VARCHAR(256) COMMENT '모델명',
+    MODEL_TYPE VARCHAR(64) COMMENT '모델 유형 (INFERENCE, TRAINING, RUNTIME)',
+    EXECUTABLE_PATH VARCHAR(512) COMMENT '실행 파일 경로',
+    WORKING_DIRECTORY VARCHAR(512) COMMENT '작업 디렉토리',
+    COMMAND_ARGS LONGTEXT COMMENT '명령 인자 (JSON)',
+    ENV_VARS LONGTEXT COMMENT '환경 변수 (JSON)',
+    AUTO_RESTART VARCHAR(1) DEFAULT 'Y' COMMENT '자동 재시작 여부',
+    MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT '최대 재시작 횟수',
+    RESTART_DELAY_SEC INT DEFAULT 10 COMMENT '재시작 대기 초 단위',
+    TIMEOUT_SEC INT DEFAULT 3600 COMMENT '타임아웃 초 단위',
+    MEMORY_LIMIT_MB INT COMMENT '메모리 제한 (MB)',
+    CPU_LIMIT_PERCENT INT COMMENT 'CPU 제한 (백분율)',
+    HEALTH_CHECK_ENABLED VARCHAR(1) DEFAULT 'Y' COMMENT 'Health Check 활성화 여부',
+    HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30 COMMENT 'Health Check 간격 초 단위',
+    HEALTH_CHECK_ENDPOINT VARCHAR(512) COMMENT 'Health Check REST API 엔드포인트',
+    METADATA LONGTEXT COMMENT '추가 메타정보 (JSON)'
+) COMMENT='프로세스 설정';
 ```
 
-#### agent_status (현재 상태)
+#### TB_M26_AGENT_STATUS
 ```sql
-CREATE TABLE agent_status (
-    status_id VARCHAR(64) PRIMARY KEY,
-    agent_id VARCHAR(64) NOT NULL,
-    process_id VARCHAR(64),
-    state VARCHAR(32),  -- STOPPED, STARTING, RUNNING, STOPPING, CRASHED, DEGRADED
-    pid INT,
-    cpu_percent FLOAT,
-    memory_mb INT,
-    last_health_check TIMESTAMP,
-    health_status VARCHAR(32),  -- HEALTHY, UNHEALTHY, UNKNOWN
-    uptime_sec BIGINT,
-    crash_count INT DEFAULT 0,
-    last_crash_time TIMESTAMP,
-    error_message TEXT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agent_info(agent_id),
-    FOREIGN KEY (process_id) REFERENCES process_config(process_id),
-    INDEX idx_agent_process (agent_id, process_id)
-);
+CREATE TABLE TB_M26_AGENT_STATUS (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    STATUS_ID VARCHAR(22) PRIMARY KEY COMMENT '상태 ID',
+    
+    -- Attributes
+    AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
+    PROCESS_ID VARCHAR(22) COMMENT '프로세스 ID',
+    PROCESS_STATE VARCHAR(32) COMMENT '프로세스 상태',
+    PROCESS_PID INT COMMENT '프로세스 PID',
+    CPU_PERCENT DECIMAL(5,2) COMMENT 'CPU 사용률',
+    MEMORY_MB INT COMMENT '메모리 사용량 (MB)',
+    HEALTH_STATUS VARCHAR(32) COMMENT 'Health 상태',
+    UPTIME_SEC BIGINT COMMENT '가동 시간 (초)',
+    CRASH_COUNT INT DEFAULT 0 COMMENT '비정상 종료 횟수',
+    LAST_HEALTH_CHECK DATETIME COMMENT '마지막 Health Check 일시',
+    LAST_CRASH_TIME DATETIME COMMENT '마지막 비정상 종료 일시',
+    LAST_HEARTBEAT DATETIME COMMENT '마지막 하트비트 일시',
+    ERROR_MESSAGE LONGTEXT COMMENT '에러 메시지'
+) COMMENT='Agent 상태';
 ```
 
-#### commands (명령 큐)
+#### TB_M26_COMMAND
 ```sql
-CREATE TABLE commands (
-    command_id VARCHAR(64) PRIMARY KEY,
-    agent_id VARCHAR(64) NOT NULL,
-    process_id VARCHAR(64),
-    command_type VARCHAR(32),  -- START, STOP, RESTART, PARAM_UPDATE, HEALTH_CHECK
-    command_status VARCHAR(32),  -- PENDING, PROCESSING, COMPLETED, FAILED
-    parameters JSON,  -- 명령별 파라미터
-    created_by VARCHAR(256),  -- 중앙 서버 또는 사용자
-    created_at TIMESTAMP,
-    processed_at TIMESTAMP,
-    failed_reason TEXT,
-    FOREIGN KEY (agent_id) REFERENCES agent_info(agent_id),
-    FOREIGN KEY (process_id) REFERENCES process_config(process_id),
-    INDEX idx_pending (command_status, agent_id)
-);
+CREATE TABLE TB_M26_COMMAND (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    COMMAND_ID VARCHAR(22) PRIMARY KEY COMMENT '명령 ID',
+    
+    -- Attributes
+    AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
+    PROCESS_ID VARCHAR(22) COMMENT '프로세스 ID',
+    COMMAND_TYPE VARCHAR(32) COMMENT '명령 유형 (START, STOP, RESTART, PARAM_UPDATE, HEALTH_CHECK)',
+    COMMAND_STATUS VARCHAR(32) COMMENT '명령 상태 (PENDING, PROCESSING, COMPLETED, FAILED)',
+    COMMAND_PARAMETERS LONGTEXT COMMENT '명령 파라미터 (JSON)',
+    PROCESSED_AT DATETIME COMMENT '처리 완료 일시',
+    FAILED_REASON LONGTEXT COMMENT '실패 사유'
+) COMMENT='명령 큐';
 ```
 
-#### model_parameters
+#### TB_M26_MODEL_PARAMETER
 ```sql
-CREATE TABLE model_parameters (
-    param_id VARCHAR(64) PRIMARY KEY,
-    process_id VARCHAR(64) NOT NULL,
-    param_key VARCHAR(256),
-    param_value TEXT,
-    param_type VARCHAR(32),  -- STRING, INTEGER, FLOAT, BOOLEAN, JSON
-    version INT,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    FOREIGN KEY (process_id) REFERENCES process_config(process_id),
-    UNIQUE KEY uk_param (process_id, param_key, version)
-);
+CREATE TABLE TB_M26_MODEL_PARAMETER (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    PARAMETER_ID VARCHAR(22) PRIMARY KEY COMMENT '파라미터 ID',
+    
+    -- Attributes
+    PROCESS_ID VARCHAR(22) COMMENT '프로세스 ID',
+    PARAM_KEY VARCHAR(256) COMMENT '파라미터 키',
+    PARAM_VALUE LONGTEXT COMMENT '파라미터 값',
+    PARAM_TYPE VARCHAR(32) COMMENT '파라미터 유형 (STRING, INTEGER, FLOAT, BOOLEAN, JSON)',
+    PARAM_VERSION INT DEFAULT 1 COMMENT '파라미터 버전',
+    IS_ACTIVE VARCHAR(1) DEFAULT 'Y' COMMENT '활성 여부'
+) COMMENT='모델 파라미터';
 ```
 
-#### execution_log (감사 로그)
+#### TB_M26_EXECUTION_LOG
 ```sql
-CREATE TABLE execution_log (
-    log_id VARCHAR(64) PRIMARY KEY,
-    agent_id VARCHAR(64),
-    process_id VARCHAR(64),
-    command_type VARCHAR(32),
-    execution_status VARCHAR(32),  -- SUCCESS, FAILURE
-    exit_code INT,
-    stdout_preview TEXT,  -- 처음 1000자
-    stderr_preview TEXT,
-    duration_sec INT,
-    created_at TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agent_info(agent_id),
-    FOREIGN KEY (process_id) REFERENCES process_config(process_id),
-    INDEX idx_process_time (process_id, created_at)
-);
+CREATE TABLE TB_M26_EXECUTION_LOG (
+    -- Audit
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
+    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
+    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
+    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
+    
+    -- PK
+    LOG_ID VARCHAR(22) PRIMARY KEY COMMENT '로그 ID',
+    
+    -- Attributes
+    AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
+    PROCESS_ID VARCHAR(22) COMMENT '프로세스 ID',
+    COMMAND_TYPE VARCHAR(32) COMMENT '명령 유형',
+    EXECUTION_STATUS VARCHAR(32) COMMENT '실행 상태 (SUCCESS, FAILURE)',
+    EXIT_CODE INT COMMENT '종료 코드',
+    STDOUT_PREVIEW LONGTEXT COMMENT '표준 출력 미리보기 (첫 1000자)',
+    STDERR_PREVIEW LONGTEXT COMMENT '표준 에러 미리보기 (첫 1000자)',
+    DURATION_SEC INT COMMENT '실행 시간 (초)'
+) COMMENT='명령 실행 로그';
 ```
 
-### 5.2 조회 뷰
+### 5.3 조회 뷰
 
 ```sql
 -- 통합 상태 뷰 (중앙 서버 대시보드용)
-CREATE VIEW model_status AS
+CREATE VIEW V_M26_MODEL_STATUS AS
 SELECT
-    ai.agent_id,
-    ai.hostname,
-    pc.process_id,
-    pc.model_name,
-    ast.state,
-    ast.pid,
-    ast.cpu_percent,
-    ast.memory_mb,
-    ast.health_status,
-    ast.uptime_sec,
-    ast.crash_count,
-    ast.last_health_check,
-    COUNT(CASE WHEN c.command_status = 'PENDING' THEN 1 END) as pending_commands
-FROM agent_info ai
-JOIN process_config pc ON ai.agent_id = pc.agent_id
-LEFT JOIN agent_status ast ON pc.process_id = ast.process_id
-LEFT JOIN commands c ON ai.agent_id = c.agent_id AND c.command_status = 'PENDING'
-GROUP BY ai.agent_id, pc.process_id;
+    ai.AGENT_ID,
+    ai.HOSTNAME,
+    pc.PROCESS_ID,
+    pc.MODEL_NAME,
+    ast.PROCESS_STATE,
+    ast.PROCESS_PID,
+    ast.CPU_PERCENT,
+    ast.MEMORY_MB,
+    ast.HEALTH_STATUS,
+    ast.UPTIME_SEC,
+    ast.CRASH_COUNT,
+    ast.LAST_HEALTH_CHECK,
+    COUNT(CASE WHEN c.COMMAND_STATUS = 'PENDING' THEN 1 END) as PENDING_COMMANDS
+FROM TB_M26_AGENT_INFO ai
+JOIN TB_M26_PROCESS_CONFIG pc ON ai.AGENT_ID = pc.AGENT_ID AND ai.DATA_END_STATUS = 'N' AND pc.DATA_END_STATUS = 'N'
+LEFT JOIN TB_M26_AGENT_STATUS ast ON pc.PROCESS_ID = ast.PROCESS_ID AND ast.DATA_END_STATUS = 'N'
+LEFT JOIN TB_M26_COMMAND c ON ai.AGENT_ID = c.AGENT_ID AND c.COMMAND_STATUS = 'PENDING' AND c.DATA_END_STATUS = 'N'
+GROUP BY ai.AGENT_ID, pc.PROCESS_ID;
 ```
 
-### 5.3 인덱싱 전략
+### 5.4 인덱싱 전략 (선택적, 조회 성능 최적화)
 
-- `agent_id`: 폴링 성능 중요
-- `command_status, agent_id`: 폴링 쿼리 최적화
-- `process_id, created_at`: 로그 조회 성능
+- `TB_M26_COMMAND`: `(AGENT_ID, COMMAND_STATUS, CREATED_TIMESTAMP)`
+- `TB_M26_AGENT_STATUS`: `(AGENT_ID, PROCESS_ID, LAST_UPDATED_TIMESTAMP)`
+- `TB_M26_EXECUTION_LOG`: `(PROCESS_ID, CREATED_TIMESTAMP)`
 ---
 
 ## 6. API 명세
