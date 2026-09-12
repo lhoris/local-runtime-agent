@@ -116,29 +116,166 @@ sudo scripts/linux/uninstall-service.sh --purge    # also removes /opt, /etc, us
 
 ---
 
-## Windows Service (planned)
+## Windows Service (WinSW)
 
-Windows deployment is designed but the install scripts are **not yet provided** —
-run the jar manually or wrap it as a service until the tooling lands.
+Windows doesn't have a built-in equivalent to systemd, so we use [WinSW](https://github.com/winsw/winsw)
+(Windows Service Wrapper) to host the Java process. The setup is two steps:
+**download WinSW, then run the installer.**
 
-### Run manually
+### Layout
+
+The installer lays the agent out as follows:
+
+| Path                                | Purpose                             |
+| ----------------------------------- | ----------------------------------- |
+| `C:\LRA\lib\local-runtime-agent-<version>.jar` | The application jar (stable name). |
+| `C:\LRA\logs\`                      | File logs (`local-runtime-agent.log`). |
+| `C:\LRA\config\application-prod.yml` | Configuration (DB creds in env vars). |
+| `C:\LRA\bin\local-runtime-agent.xml` | WinSW service configuration.       |
+| `C:\LRA\bin\local-runtime-agent.exe` | WinSW wrapper (generated).         |
+| `C:\LRA\scripts\windows\`           | Install/uninstall/start scripts.   |
+
+### Prerequisites
+
+1. **Java 21** installed and on `PATH`.
+   ```powershell
+   java -version  # should print version 21.x
+   ```
+
+2. **PostgreSQL** reachable with working credentials.
+
+3. **WinSW.exe** — download from [releases](https://github.com/winsw/winsw/releases).
+   Look for `WinSW-x64.exe` (x64 systems). Rename it to `WinSW.exe`.
+
+### Quick start (Windows VM)
+
+Assume you have:
+- `local-runtime-agent-0.0.1-SNAPSHOT.zip` (from `mvn package`)
+- `WinSW.exe` (downloaded)
+
+**Step 1: Unpack and place WinSW**
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE = "prod"
-# set DB_HOST / DB_NAME / DB_USER / DB_PASSWORD ...
-java -jar target\local-runtime-agent-0.0.1-SNAPSHOT.jar
+# Extract the zip to a deployment location, e.g., C:\LRA
+Expand-Archive .\local-runtime-agent-0.0.1-SNAPSHOT.zip -DestinationPath C:\LRA
+cd C:\LRA
+
+# Copy WinSW.exe to scripts\windows\
+Copy-Item .\WinSW.exe .\scripts\windows\
 ```
 
-### Planned approach
+**Step 2: Set environment variables**
 
-- **WinSW** (Windows Service Wrapper) driven by a `service.xml` that points at the
-  jar, with a PowerShell wrapper (`scripts/windows/install-service.ps1`) to
-  register/start the service. See `docs/ARCHITECTURE.md` §9 for the reference
-  `service.xml`.
-- Environment variables will be supplied via the service definition rather than
-  an `EnvironmentFile`.
+The service reads environment variables from Windows; set the DB credentials:
 
-Until then, live verification of the Windows path must be done on a Windows host.
+```powershell
+[Environment]::SetEnvironmentVariable("DB_HOST", "your-postgres-host", "Machine")
+[Environment]::SetEnvironmentVariable("DB_PORT", "5432", "Machine")
+[Environment]::SetEnvironmentVariable("DB_NAME", "lra_db", "Machine")
+[Environment]::SetEnvironmentVariable("DB_USER", "postgres", "Machine")
+[Environment]::SetEnvironmentVariable("DB_PASSWORD", "your-password", "Machine")
+[Environment]::SetEnvironmentVariable("SERVER_PORT", "8080", "Machine")
+[Environment]::SetEnvironmentVariable("AGENT_ID", "agent-vm-01", "Machine")
+[Environment]::SetEnvironmentVariable("LOG_FILE", "C:\LRA\logs\local-runtime-agent.log", "Machine")
+```
+
+**Step 3: Install the service (elevated PowerShell)**
+
+```powershell
+# Run elevated: right-click PowerShell → "Run as Administrator"
+cd C:\LRA
+.\scripts\windows\install-service.ps1
+```
+
+This will:
+1. Validate WinSW.exe is present.
+2. Find the jar in `lib\`.
+3. Generate `bin\local-runtime-agent.xml` (service config).
+4. Copy WinSW.exe to `bin\local-runtime-agent.exe`.
+5. Register the service with Windows SCM.
+
+**Step 4: Start the service**
+
+```powershell
+# Still elevated
+.\scripts\windows\start-service.ps1
+```
+
+Or use Windows Service Manager:
+```powershell
+Get-Service "local-runtime-agent" | Start-Service
+```
+
+### Verify
+
+```powershell
+# Check service status
+Get-Service "local-runtime-agent"
+
+# View live logs
+Get-Content C:\LRA\logs\local-runtime-agent.log -Tail 20 -Wait
+
+# Or check Windows Event Viewer for java.exe errors
+```
+
+A healthy start logs the Spring banner and `Started ... in N seconds`, followed
+by agent loop cycles.
+
+### Common operations
+
+```powershell
+# Restart the service (e.g., after config changes)
+Restart-Service -Name "local-runtime-agent"
+
+# Stop the service
+Stop-Service -Name "local-runtime-agent"
+
+# Remove the service
+.\scripts\windows\uninstall-service.ps1
+```
+
+### Upgrade
+
+Rebuild, uninstall, update, then reinstall:
+
+```powershell
+# On your dev machine
+./mvnw clean package
+# → produces target\local-runtime-agent-<version>.zip
+
+# On the Windows VM
+.\scripts\windows\uninstall-service.ps1
+Expand-Archive .\local-runtime-agent-<new-version>.zip -DestinationPath C:\LRA -Force
+Copy-Item .\WinSW.exe .\C:\LRA\scripts\windows\
+.\C:\LRA\scripts\windows\install-service.ps1
+.\C:\LRA\scripts\windows\start-service.ps1
+```
+
+### Troubleshooting
+
+| Symptom | Likely cause / fix |
+| ------- | ------------------ |
+| `WinSW.exe not found` | Download it from [releases](https://github.com/winsw/winsw/releases) and place in `scripts\windows\`, or set `$env:WINSW_EXE`. |
+| `java` not found | Add Java 21 to `PATH` or reinstall Java. Verify with `java -version`. |
+| Service fails to start; Event Viewer shows datasource error | Check env vars: `[Environment]::GetEnvironmentVariables("Machine")` should list `DB_HOST`, `DB_NAME`, etc. Restart PowerShell after setting them. |
+| `Port 8080 already in use` | Change `SERVER_PORT` env var to a different port (e.g., 9090). Restart the service. |
+| Service exits after 5 seconds | Check `C:\LRA\logs\local-runtime-agent.log` for errors. Common causes: wrong DB creds, DB not reachable. |
+
+### Run manually (no service)
+
+For testing or troubleshooting without installing a service:
+
+```powershell
+cd C:\LRA
+$env:SPRING_PROFILES_ACTIVE = "prod"
+$env:DB_HOST = "your-postgres-host"
+$env:DB_NAME = "lra_db"
+$env:DB_USER = "postgres"
+$env:DB_PASSWORD = "your-password"
+.\bin\start.bat
+```
+
+This runs the agent in the foreground; Ctrl+C to stop.
 
 ---
 
