@@ -1,6 +1,16 @@
 -- Local Runtime Agent - Enterprise Standard Schema (ARCHITECTURE.md §5)
 -- Dialect: PostgreSQL (H2 test with PostgreSQL mode)
--- All tables use TB_M26_ prefix and enterprise audit columns
+-- Clean slate: Drop old tables, create TB_M26_* only
+
+-- Drop existing tables if they exist (legacy cleanup)
+DROP TABLE IF EXISTS execution_log;
+DROP TABLE IF EXISTS heartbeat_log;
+DROP TABLE IF EXISTS model_parameters;
+DROP TABLE IF EXISTS commands;
+DROP TABLE IF EXISTS agent_status;
+DROP TABLE IF EXISTS process_config;
+DROP TABLE IF EXISTS agent_info;
+DROP VIEW IF EXISTS model_status;
 
 -- TB_M26_AGENT_INFO: Local Runtime Agent 정보
 CREATE TABLE TB_M26_AGENT_INFO (
