@@ -48,7 +48,6 @@ public class CommandService {
         command.setCommandType(request.commandType().name());
         command.setCommandStatus(CommandStatus.PENDING.name());
         command.setParameters(request.parameters());
-        command.setCreatedBy(CREATED_BY);
         Command saved = commandRepository.save(command);
         return toCommandDto(saved);
     }
@@ -79,7 +78,7 @@ public class CommandService {
                 command.getProcessId(),
                 command.getCommandType(),
                 command.getCommandStatus(),
-                command.getCreatedAt());
+                null);
     }
 
     private ExecutionLogDto toLogDto(ExecutionLog log) {

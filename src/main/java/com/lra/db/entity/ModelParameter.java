@@ -16,41 +16,37 @@ import java.util.Objects;
  * (ARCHITECTURE.md §5.1 model_parameters).
  */
 @Entity
-@Table(name = "model_parameters")
+@Table(name = "TB_M26_MODEL_PARAMETER")
 public class ModelParameter {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "param_id", length = 64)
+    @Column(name = "PARAMETER_ID", length = 64)
     private String paramId;
 
     @NotBlank
-    @Column(name = "process_id", length = 64, nullable = false)
+    @Column(name = "PROCESS_ID", length = 64, nullable = false)
     private String processId;
 
-    @Column(name = "param_key", length = 256)
+    @Column(name = "PARAM_KEY", length = 256)
     private String paramKey;
 
-    @Column(name = "param_value", columnDefinition = "text")
+    @Column(name = "PARAM_VALUE", columnDefinition = "text")
     private String paramValue;
 
-    @Column(name = "param_type", length = 32)
+    @Column(name = "PARAM_TYPE", length = 32)
     private String paramType;
 
-    @Column(name = "version")
+    @Column(name = "PARAM_VERSION")
     private Integer version;
 
-    @Column(name = "is_active")
+    @Column(name = "IS_ACTIVE")
     private Boolean isActive;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+    
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+    
 
     public String getParamId() {
         return paramId;
@@ -116,14 +112,6 @@ public class ModelParameter {
         this.createdAt = createdAt;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -140,3 +128,4 @@ public class ModelParameter {
         return Objects.hashCode(paramId);
     }
 }
+

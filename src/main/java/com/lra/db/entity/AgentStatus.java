@@ -16,62 +16,54 @@ import java.util.Objects;
  * (ARCHITECTURE.md §5.1 agent_status).
  */
 @Entity
-@Table(name = "agent_status")
+@Table(name = "TB_M26_AGENT_STATUS")
 public class AgentStatus {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "status_id", length = 64)
+    @Column(name = "STATUS_ID", length = 64)
     private String statusId;
 
     @NotBlank
-    @Column(name = "agent_id", length = 64, nullable = false)
+    @Column(name = "AGENT_ID", length = 64, nullable = false)
     private String agentId;
 
-    @Column(name = "process_id", length = 64)
+    @Column(name = "PROCESS_ID", length = 64)
     private String processId;
 
-    @Column(name = "state", length = 32)
+    @Column(name = "PROCESS_STATE", length = 32)
     private String state;
 
-    @Column(name = "pid")
+    @Column(name = "PROCESS_PID")
     private Integer pid;
 
-    @Column(name = "cpu_percent")
+    @Column(name = "CPU_PERCENT")
     private Float cpuPercent;
 
-    @Column(name = "memory_mb")
+    @Column(name = "MEMORY_MB")
     private Integer memoryMb;
 
-    @Column(name = "last_health_check")
+    @Column(name = "LAST_HEALTH_CHECK")
     private Instant lastHealthCheck;
 
-    @Column(name = "last_heartbeat")
+    @Column(name = "LAST_HEARTBEAT")
     private Instant lastHeartbeat;
 
-    @Column(name = "health_status", length = 32)
+    @Column(name = "HEALTH_STATUS", length = 32)
     private String healthStatus;
 
-    @Column(name = "uptime_sec")
+    @Column(name = "UPTIME_SEC")
     private Long uptimeSec;
 
-    @Column(name = "crash_count")
+    @Column(name = "CRASH_COUNT")
     private Integer crashCount;
 
-    @Column(name = "last_crash_time")
+    @Column(name = "LAST_CRASH_TIME")
     private Instant lastCrashTime;
 
-    @Column(name = "error_message", columnDefinition = "text")
+    @Column(name = "ERROR_MESSAGE", columnDefinition = "text")
     private String errorMessage;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 
     public String getStatusId() {
         return statusId;
@@ -183,22 +175,6 @@ public class AgentStatus {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     @Override

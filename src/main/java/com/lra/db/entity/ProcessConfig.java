@@ -19,77 +19,68 @@ import java.util.Objects;
  * (ARCHITECTURE.md §5.1 process_config).
  */
 @Entity
-@Table(name = "process_config")
+@Table(name = "TB_M26_PROCESS_CONFIG")
 public class ProcessConfig {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "process_id", length = 64)
+    @Column(name = "PROCESS_ID", length = 64)
     private String processId;
 
     @NotBlank
-    @Column(name = "agent_id", length = 64, nullable = false)
+    @Column(name = "AGENT_ID", length = 64, nullable = false)
     private String agentId;
 
-    @Column(name = "model_name", length = 256)
+    @Column(name = "MODEL_NAME", length = 256)
     private String modelName;
 
-    @Column(name = "model_type", length = 64)
+    @Column(name = "MODEL_TYPE", length = 64)
     private String modelType;
 
-    @Column(name = "executable_path", length = 512)
+    @Column(name = "EXECUTABLE_PATH", length = 512)
     private String executablePath;
 
-    @Column(name = "working_directory", length = 512)
+    @Column(name = "WORKING_DIRECTORY", length = 512)
     private String workingDirectory;
 
-    /** JSON array of launch arguments, stored as TEXT. */
-    @Column(name = "command_args", columnDefinition = "text")
+    @Column(name = "COMMAND_ARGS", columnDefinition = "text")
     private String commandArgs;
 
-    /** JSON object of environment variables, stored as TEXT. */
-    @Column(name = "env_vars", columnDefinition = "text")
+    @Column(name = "ENV_VARS", columnDefinition = "text")
     private String envVars;
 
-    @Column(name = "auto_restart")
+    @Column(name = "AUTO_RESTART")
     private Boolean autoRestart;
 
-    @Column(name = "max_restart_attempts")
+    @Column(name = "MAX_RESTART_ATTEMPTS")
     private Integer maxRestartAttempts;
 
-    @Column(name = "restart_delay_sec")
+    @Column(name = "RESTART_DELAY_SEC")
     private Integer restartDelaySec;
 
-    @Column(name = "timeout_sec")
+    @Column(name = "TIMEOUT_SEC")
     private Integer timeoutSec;
 
-    @Column(name = "memory_limit_mb")
+    @Column(name = "MEMORY_LIMIT_MB")
     private Integer memoryLimitMb;
 
-    @Column(name = "cpu_limit_percent")
+    @Column(name = "CPU_LIMIT_PERCENT")
     private Integer cpuLimitPercent;
 
-    @Column(name = "health_check_enabled")
+    @Column(name = "HEALTH_CHECK_ENABLED")
     private Boolean healthCheckEnabled;
 
-    @Column(name = "health_check_interval_sec")
+    @Column(name = "HEALTH_CHECK_INTERVAL_SEC")
     private Integer healthCheckIntervalSec;
 
-    @Column(name = "health_check_endpoint", length = 512)
+    @Column(name = "HEALTH_CHECK_ENDPOINT", length = 512)
     private String healthCheckEndpoint;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata")
+    @Column(name = "METADATA")
     private Map<String, Object> metadata;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 
     public String getProcessId() {
         return processId;
@@ -233,22 +224,6 @@ public class ProcessConfig {
 
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     @Override

@@ -17,43 +17,35 @@ import java.util.Objects;
  * A control command queued for an agent to consume (ARCHITECTURE.md §5.1 commands).
  */
 @Entity
-@Table(name = "commands")
+@Table(name = "TB_M26_COMMAND")
 public class Command {
 
-    /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "command_id", length = 64)
+    @Column(name = "COMMAND_ID", length = 22)
     private String commandId;
 
     @NotBlank
-    @Column(name = "agent_id", length = 64, nullable = false)
+    @Column(name = "AGENT_ID", length = 22, nullable = false)
     private String agentId;
 
-    @Column(name = "process_id", length = 64)
+    @Column(name = "PROCESS_ID", length = 22)
     private String processId;
 
-    @Column(name = "command_type", length = 32)
+    @Column(name = "COMMAND_TYPE", length = 32)
     private String commandType;
 
-    @Column(name = "command_status", length = 32)
+    @Column(name = "COMMAND_STATUS", length = 32)
     private String commandStatus;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "parameters")
+    @Column(name = "COMMAND_PARAMETERS")
     private Map<String, Object> parameters;
 
-    @Column(name = "created_by", length = 256)
-    private String createdBy;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
-
-    @Column(name = "processed_at")
+    @Column(name = "PROCESSED_AT")
     private Instant processedAt;
 
-    @Column(name = "failed_reason", columnDefinition = "text")
+    @Column(name = "FAILED_REASON", columnDefinition = "text")
     private String failedReason;
 
     public String getCommandId() {
@@ -102,22 +94,6 @@ public class Command {
 
     public void setParameters(Map<String, Object> parameters) {
         this.parameters = parameters;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getProcessedAt() {

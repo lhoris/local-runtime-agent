@@ -15,42 +15,38 @@ import java.util.Objects;
  * (ARCHITECTURE.md §5.1 execution_log).
  */
 @Entity
-@Table(name = "execution_log")
+@Table(name = "TB_M26_EXECUTION_LOG")
 public class ExecutionLog {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "log_id", length = 64)
+    @Column(name = "LOG_ID", length = 22)
     private String logId;
 
-    @Column(name = "agent_id", length = 64)
+    @Column(name = "AGENT_ID", length = 22)
     private String agentId;
 
-    @Column(name = "process_id", length = 64)
+    @Column(name = "PROCESS_ID", length = 22)
     private String processId;
 
-    @Column(name = "command_type", length = 32)
+    @Column(name = "COMMAND_TYPE", length = 32)
     private String commandType;
 
-    @Column(name = "execution_status", length = 32)
+    @Column(name = "EXECUTION_STATUS", length = 32)
     private String executionStatus;
 
-    @Column(name = "exit_code")
+    @Column(name = "EXIT_CODE")
     private Integer exitCode;
 
-    @Column(name = "stdout_preview", columnDefinition = "text")
+    @Column(name = "STDOUT_PREVIEW", columnDefinition = "text")
     private String stdoutPreview;
 
-    @Column(name = "stderr_preview", columnDefinition = "text")
+    @Column(name = "STDERR_PREVIEW", columnDefinition = "text")
     private String stderrPreview;
 
-    @Column(name = "duration_sec")
+    @Column(name = "DURATION_SEC")
     private Integer durationSec;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
 
     public String getLogId() {
         return logId;
@@ -122,14 +118,6 @@ public class ExecutionLog {
 
     public void setDurationSec(Integer durationSec) {
         this.durationSec = durationSec;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     @Override

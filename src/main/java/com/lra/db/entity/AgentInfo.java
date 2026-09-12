@@ -15,37 +15,28 @@ import java.util.Objects;
  * A PC-unit agent registered with the central server (ARCHITECTURE.md §5.1 agent_info).
  */
 @Entity
-@Table(name = "agent_info")
+@Table(name = "TB_M26_AGENT_INFO")
 public class AgentInfo {
 
-    /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "agent_id", length = 64)
+    @Column(name = "AGENT_ID", length = 22)
     private String agentId;
 
-    @Column(name = "hostname", length = 256)
+    @Column(name = "HOSTNAME", length = 256)
     private String hostname;
 
-    @Column(name = "os_type", length = 32)
+    @Column(name = "OS_TYPE", length = 32)
     private String osType;
 
-    @Column(name = "ip_address", length = 45)
+    @Column(name = "IP_ADDRESS", length = 45)
     private String ipAddress;
 
-    @Column(name = "spring_boot_version", length = 32)
+    @Column(name = "SPRING_BOOT_VERSION", length = 32)
     private String springBootVersion;
 
-    @Column(name = "installed_at")
+    @Column(name = "INSTALLED_AT")
     private Instant installedAt;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private Instant updatedAt;
 
     public String getAgentId() {
         return agentId;
@@ -93,22 +84,6 @@ public class AgentInfo {
 
     public void setInstalledAt(Instant installedAt) {
         this.installedAt = installedAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     @Override

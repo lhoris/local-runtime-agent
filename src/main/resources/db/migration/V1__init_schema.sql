@@ -1,155 +1,201 @@
--- Local Runtime Agent - initial schema (ARCHITECTURE.md §5)
--- Dialect: PostgreSQL. H2 (test) runs in PostgreSQL compatibility mode with a
--- JSONB domain aliased to JSON (see application-test.yml INIT clause).
+-- Local Runtime Agent - Enterprise Standard Schema (ARCHITECTURE.md §5)
+-- Dialect: PostgreSQL (H2 test with PostgreSQL mode)
+-- All tables use TB_M26_ prefix and enterprise audit columns
 
-CREATE TABLE agent_info (
-    agent_id            VARCHAR(64) PRIMARY KEY,
-    hostname            VARCHAR(256),
-    os_type             VARCHAR(32),
-    ip_address          VARCHAR(45),
-    spring_boot_version VARCHAR(32),
-    installed_at        TIMESTAMP,
-    created_at          TIMESTAMP,
-    updated_at          TIMESTAMP
+-- TB_M26_AGENT_INFO: Local Runtime Agent 정보
+CREATE TABLE TB_M26_AGENT_INFO (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    AGENT_ID VARCHAR(22) PRIMARY KEY,
+    HOSTNAME VARCHAR(256),
+    OS_TYPE VARCHAR(32),
+    IP_ADDRESS VARCHAR(45),
+    SPRING_BOOT_VERSION VARCHAR(32),
+    INSTALLED_AT TIMESTAMP
 );
 
-CREATE TABLE process_config (
-    process_id                VARCHAR(64) PRIMARY KEY,
-    agent_id                  VARCHAR(64) NOT NULL,
-    model_name                VARCHAR(256),
-    model_type                VARCHAR(64),
-    executable_path           VARCHAR(512),
-    working_directory         VARCHAR(512),
-    command_args              TEXT,
-    env_vars                  TEXT,
-    auto_restart              BOOLEAN DEFAULT TRUE,
-    max_restart_attempts      INT DEFAULT 3,
-    restart_delay_sec         INT DEFAULT 10,
-    timeout_sec               INT DEFAULT 3600,
-    memory_limit_mb           INT,
-    cpu_limit_percent         INT,
-    health_check_enabled      BOOLEAN DEFAULT TRUE,
-    health_check_interval_sec INT DEFAULT 30,
-    health_check_endpoint     VARCHAR(512),
-    metadata                  JSONB,
-    created_at                TIMESTAMP,
-    updated_at                TIMESTAMP,
-    CONSTRAINT fk_process_config_agent FOREIGN KEY (agent_id) REFERENCES agent_info (agent_id)
+-- TB_M26_PROCESS_CONFIG: 프로세스 설정
+CREATE TABLE TB_M26_PROCESS_CONFIG (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    PROCESS_ID VARCHAR(22) PRIMARY KEY,
+    AGENT_ID VARCHAR(22) NOT NULL,
+    MODEL_NAME VARCHAR(256),
+    MODEL_TYPE VARCHAR(64),
+    EXECUTABLE_PATH VARCHAR(512),
+    WORKING_DIRECTORY VARCHAR(512),
+    COMMAND_ARGS TEXT,
+    ENV_VARS TEXT,
+    AUTO_RESTART VARCHAR(1) DEFAULT 'Y',
+    MAX_RESTART_ATTEMPTS INT DEFAULT 3,
+    RESTART_DELAY_SEC INT DEFAULT 10,
+    TIMEOUT_SEC INT DEFAULT 3600,
+    MEMORY_LIMIT_MB INT,
+    CPU_LIMIT_PERCENT INT,
+    HEALTH_CHECK_ENABLED VARCHAR(1) DEFAULT 'Y',
+    HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30,
+    HEALTH_CHECK_ENDPOINT VARCHAR(512),
+    METADATA TEXT
 );
 
-CREATE TABLE agent_status (
-    status_id         VARCHAR(64) PRIMARY KEY,
-    agent_id          VARCHAR(64) NOT NULL,
-    process_id        VARCHAR(64),
-    state             VARCHAR(32),
-    pid               INT,
-    cpu_percent       FLOAT,
-    memory_mb         INT,
-    last_health_check TIMESTAMP,
-    health_status     VARCHAR(32),
-    uptime_sec        BIGINT,
-    crash_count       INT DEFAULT 0,
-    last_crash_time   TIMESTAMP,
-    error_message     TEXT,
-    created_at        TIMESTAMP,
-    updated_at        TIMESTAMP,
-    CONSTRAINT fk_agent_status_agent FOREIGN KEY (agent_id) REFERENCES agent_info (agent_id),
-    CONSTRAINT fk_agent_status_process FOREIGN KEY (process_id) REFERENCES process_config (process_id)
+-- TB_M26_AGENT_STATUS: Agent 현재 상태
+CREATE TABLE TB_M26_AGENT_STATUS (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    STATUS_ID VARCHAR(22) PRIMARY KEY,
+    AGENT_ID VARCHAR(22) NOT NULL,
+    PROCESS_ID VARCHAR(22),
+    PROCESS_STATE VARCHAR(32),
+    PROCESS_PID INT,
+    CPU_PERCENT DECIMAL(5,2),
+    MEMORY_MB INT,
+    HEALTH_STATUS VARCHAR(32),
+    UPTIME_SEC BIGINT,
+    CRASH_COUNT INT DEFAULT 0,
+    LAST_HEALTH_CHECK TIMESTAMP,
+    LAST_CRASH_TIME TIMESTAMP,
+    LAST_HEARTBEAT TIMESTAMP,
+    ERROR_MESSAGE TEXT
 );
 
-CREATE INDEX idx_agent_process ON agent_status (agent_id, process_id);
+CREATE INDEX IDX_AGENT_PROCESS ON TB_M26_AGENT_STATUS (AGENT_ID, PROCESS_ID);
 
-CREATE TABLE commands (
-    command_id     VARCHAR(64) PRIMARY KEY,
-    agent_id       VARCHAR(64) NOT NULL,
-    process_id     VARCHAR(64),
-    command_type   VARCHAR(32),
-    command_status VARCHAR(32),
-    parameters     JSONB,
-    created_by     VARCHAR(256),
-    created_at     TIMESTAMP,
-    processed_at   TIMESTAMP,
-    failed_reason  TEXT,
-    CONSTRAINT fk_commands_agent FOREIGN KEY (agent_id) REFERENCES agent_info (agent_id),
-    CONSTRAINT fk_commands_process FOREIGN KEY (process_id) REFERENCES process_config (process_id)
+-- TB_M26_COMMAND: 명령 큐
+CREATE TABLE TB_M26_COMMAND (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    COMMAND_ID VARCHAR(22) PRIMARY KEY,
+    AGENT_ID VARCHAR(22) NOT NULL,
+    PROCESS_ID VARCHAR(22),
+    COMMAND_TYPE VARCHAR(32),
+    COMMAND_STATUS VARCHAR(32),
+    COMMAND_PARAMETERS TEXT,
+    PROCESSED_AT TIMESTAMP,
+    FAILED_REASON TEXT
 );
 
-CREATE INDEX idx_pending ON commands (command_status, agent_id);
+CREATE INDEX IDX_PENDING ON TB_M26_COMMAND (COMMAND_STATUS, AGENT_ID);
 
-CREATE TABLE model_parameters (
-    param_id    VARCHAR(64) PRIMARY KEY,
-    process_id  VARCHAR(64) NOT NULL,
-    param_key   VARCHAR(256),
-    param_value TEXT,
-    param_type  VARCHAR(32),
-    version     INT,
-    is_active   BOOLEAN DEFAULT TRUE,
-    created_at  TIMESTAMP,
-    updated_at  TIMESTAMP,
-    CONSTRAINT fk_model_parameters_process FOREIGN KEY (process_id) REFERENCES process_config (process_id),
-    CONSTRAINT uk_param UNIQUE (process_id, param_key, version)
+-- TB_M26_MODEL_PARAMETER: 모델 파라미터
+CREATE TABLE TB_M26_MODEL_PARAMETER (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    PARAMETER_ID VARCHAR(22) PRIMARY KEY,
+    PROCESS_ID VARCHAR(22) NOT NULL,
+    PARAM_KEY VARCHAR(256),
+    PARAM_VALUE TEXT,
+    PARAM_TYPE VARCHAR(32),
+    PARAM_VERSION INT DEFAULT 1,
+    IS_ACTIVE VARCHAR(1) DEFAULT 'Y'
 );
 
-CREATE TABLE heartbeat_log (
-    heartbeat_id   VARCHAR(64) PRIMARY KEY,
-    agent_id       VARCHAR(64) NOT NULL,
-    heartbeat_time TIMESTAMP,
-    agent_status   JSONB,
-    created_at     TIMESTAMP,
-    CONSTRAINT fk_heartbeat_log_agent FOREIGN KEY (agent_id) REFERENCES agent_info (agent_id)
+-- TB_M26_EXECUTION_LOG: 실행 로그
+CREATE TABLE TB_M26_EXECUTION_LOG (
+    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N',
+    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL,
+    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL,
+    DATA_END_TIMESTAMP TIMESTAMP DEFAULT NULL,
+
+    LOG_ID VARCHAR(22) PRIMARY KEY,
+    AGENT_ID VARCHAR(22),
+    PROCESS_ID VARCHAR(22),
+    COMMAND_TYPE VARCHAR(32),
+    EXECUTION_STATUS VARCHAR(32),
+    EXIT_CODE INT,
+    STDOUT_PREVIEW TEXT,
+    STDERR_PREVIEW TEXT,
+    DURATION_SEC INT
 );
 
-CREATE INDEX idx_agent_time ON heartbeat_log (agent_id, heartbeat_time);
+CREATE INDEX IDX_PROCESS_TIME ON TB_M26_EXECUTION_LOG (PROCESS_ID, CREATED_TIMESTAMP);
 
-CREATE TABLE execution_log (
-    log_id           VARCHAR(64) PRIMARY KEY,
-    agent_id         VARCHAR(64),
-    process_id       VARCHAR(64),
-    command_type     VARCHAR(32),
-    execution_status VARCHAR(32),
-    exit_code        INT,
-    stdout_preview   TEXT,
-    stderr_preview   TEXT,
-    duration_sec     INT,
-    created_at       TIMESTAMP,
-    CONSTRAINT fk_execution_log_agent FOREIGN KEY (agent_id) REFERENCES agent_info (agent_id),
-    CONSTRAINT fk_execution_log_process FOREIGN KEY (process_id) REFERENCES process_config (process_id)
-);
-
-CREATE INDEX idx_process_time ON execution_log (process_id, created_at);
-
--- Integrated status view for the central dashboard.
--- PostgreSQL requires every non-aggregated selected column in GROUP BY
--- (the design's MySQL loose GROUP BY is invalid here), so all are listed.
-CREATE VIEW model_status AS
+-- V_M26_MODEL_STATUS: 통합 상태 뷰 (중앙 서버 대시보드용)
+CREATE VIEW V_M26_MODEL_STATUS AS
 SELECT
-    ai.agent_id,
-    ai.hostname,
-    pc.process_id,
-    pc.model_name,
-    ast.state,
-    ast.pid,
-    ast.cpu_percent,
-    ast.memory_mb,
-    ast.health_status,
-    ast.uptime_sec,
-    ast.crash_count,
-    ast.last_health_check,
-    COUNT(CASE WHEN c.command_status = 'PENDING' THEN 1 END) AS pending_commands
-FROM agent_info ai
-JOIN process_config pc ON ai.agent_id = pc.agent_id
-LEFT JOIN agent_status ast ON pc.process_id = ast.process_id
-LEFT JOIN commands c ON ai.agent_id = c.agent_id AND c.command_status = 'PENDING'
-GROUP BY
-    ai.agent_id,
-    ai.hostname,
-    pc.process_id,
-    pc.model_name,
-    ast.state,
-    ast.pid,
-    ast.cpu_percent,
-    ast.memory_mb,
-    ast.health_status,
-    ast.uptime_sec,
-    ast.crash_count,
-    ast.last_health_check;
+    ai.AGENT_ID,
+    ai.HOSTNAME,
+    pc.PROCESS_ID,
+    pc.MODEL_NAME,
+    ast.PROCESS_STATE,
+    ast.PROCESS_PID,
+    ast.CPU_PERCENT,
+    ast.MEMORY_MB,
+    ast.HEALTH_STATUS,
+    ast.UPTIME_SEC,
+    ast.CRASH_COUNT,
+    ast.LAST_HEALTH_CHECK,
+    COUNT(CASE WHEN c.COMMAND_STATUS = 'PENDING' THEN 1 END) as PENDING_COMMANDS
+FROM TB_M26_AGENT_INFO ai
+JOIN TB_M26_PROCESS_CONFIG pc ON ai.AGENT_ID = pc.AGENT_ID AND ai.DATA_END_STATUS = 'N' AND pc.DATA_END_STATUS = 'N'
+LEFT JOIN TB_M26_AGENT_STATUS ast ON pc.PROCESS_ID = ast.PROCESS_ID AND ast.DATA_END_STATUS = 'N'
+LEFT JOIN TB_M26_COMMAND c ON ai.AGENT_ID = c.AGENT_ID AND c.COMMAND_STATUS = 'PENDING' AND c.DATA_END_STATUS = 'N'
+GROUP BY ai.AGENT_ID, pc.PROCESS_ID;
