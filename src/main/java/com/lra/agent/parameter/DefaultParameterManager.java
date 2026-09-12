@@ -85,7 +85,6 @@ public class DefaultParameterManager implements ParameterManager {
         newParam.setParamType(inferType(paramValue).name());
         newParam.setVersion(getLatestVersion(processId, paramKey) + 1);
         newParam.setIsActive(true);
-        newParam.setCreatedAt(Instant.now());
 
         parameterRepository.save(newParam);
     }

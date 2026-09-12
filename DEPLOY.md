@@ -21,8 +21,9 @@ reads all connection settings from the environment:
 
 | Variable | Purpose |
 |----------|---------|
-| `DB_HOST`, `DB_PORT`, `DB_NAME` | PostgreSQL connection |
-| `DB_USER`, `DB_PASSWORD` | PostgreSQL credentials |
+| `DB_HOST`, `DB_PORT`, `DB_NAME` | MariaDB 11.8 connection |
+| `DB_USER`, `DB_PASSWORD` | MariaDB credentials |
+| `DB_USE_SSL` | Enable SSL for MariaDB (true/false) |
 | `SERVER_PORT` | HTTP port (default 8080) |
 | `AGENT_ID` | Agent identifier |
 | `LOG_FILE` | Log file path |

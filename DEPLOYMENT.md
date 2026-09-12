@@ -7,7 +7,7 @@ platform's service manager so it starts on boot and restarts on failure.
 ## Prerequisites
 
 - **Java 21** (JRE or JDK) on the target host.
-- A reachable **PostgreSQL** instance and its credentials.
+- A reachable **MariaDB 11.8** instance and its credentials.
 - A built jar: `./mvnw clean package` produces
   `target/local-runtime-agent-<version>.jar`.
 
@@ -101,8 +101,8 @@ sudo scripts/linux/uninstall-service.sh --purge    # also removes /opt, /etc, us
 - **Hardening:** the unit runs with `NoNewPrivileges`, `PrivateTmp`,
   `ProtectSystem=full`, and `ProtectHome`, and may only write under
   `/opt/lra-agent/logs`.
-- **Ordering:** starts `After=network-online.target postgresql.service`. If
-  PostgreSQL runs on a different host, the `postgresql.service` dependency is
+- **Ordering:** starts `After=network-online.target mariadb.service`. If
+  MariaDB runs on a different host, the `mariadb.service` dependency is
   simply a no-op.
 
 ### Troubleshooting
@@ -110,8 +110,8 @@ sudo scripts/linux/uninstall-service.sh --purge    # also removes /opt, /etc, us
 | Symptom | Likely cause / fix |
 | ------- | ------------------ |
 | `status=203/EXEC` | `java` not at `/usr/bin/java`. Symlink it or edit `ExecStart`. |
-| Fails immediately, log shows datasource error | `lra-agent.env` missing DB creds or `SPRING_PROFILES_ACTIVE` not `prod`. |
-| `Flyway ... validate failed` | Schema drift; check the DB matches the migrations in `db/migration`. |
+| Fails immediately, log shows datasource error | `lra-agent.env` missing DB creds or `SPRING_PROFILES_ACTIVE` not `prod`. Verify MariaDB host/port/credentials. |
+| `Flyway ... validate failed` | Schema drift; check the MariaDB instance matches the migrations in `db/migration`. |
 | No logs in `/opt/lra-agent/logs` | Check journal instead (`journalctl -u local-runtime-agent`); file logging depends on `LOG_FILE`. |
 
 ---
@@ -169,10 +169,10 @@ Copy-Item .\WinSW.exe .\scripts\windows\
 The service reads environment variables from Windows; set the DB credentials:
 
 ```powershell
-[Environment]::SetEnvironmentVariable("DB_HOST", "your-postgres-host", "Machine")
-[Environment]::SetEnvironmentVariable("DB_PORT", "5432", "Machine")
+[Environment]::SetEnvironmentVariable("DB_HOST", "your-mariadb-host", "Machine")
+[Environment]::SetEnvironmentVariable("DB_PORT", "3306", "Machine")
 [Environment]::SetEnvironmentVariable("DB_NAME", "lra_db", "Machine")
-[Environment]::SetEnvironmentVariable("DB_USER", "postgres", "Machine")
+[Environment]::SetEnvironmentVariable("DB_USER", "agent", "Machine")
 [Environment]::SetEnvironmentVariable("DB_PASSWORD", "your-password", "Machine")
 [Environment]::SetEnvironmentVariable("SERVER_PORT", "8080", "Machine")
 [Environment]::SetEnvironmentVariable("AGENT_ID", "agent-vm-01", "Machine")
@@ -284,6 +284,6 @@ This runs the agent in the foreground; Ctrl+C to stop.
 | Symptom | Likely cause / fix |
 | ------- | ------------------ |
 | Port `8080` already in use | Another process holds the port. Change `SERVER_PORT` (env) or `server.port` in `application.yml`. |
-| DB connection refused / auth failed | Verify DB creds in `/etc/lra-agent/lra-agent.env` (Linux) or the environment. Confirm PostgreSQL is reachable and `DB_SSLMODE` matches the server. |
-| Managed process never starts | Check the row in `process_config`: `executable_path` must exist and be runnable, and `command_args` must be a valid JSON array. |
+| DB connection refused / auth failed | Verify DB creds in `/etc/lra-agent/lra-agent.env` (Linux) or the environment. Confirm MariaDB is reachable on the configured host/port. |
+| Managed process never starts | Check the row in `TB_M26_PROCESS_CONFIG`: `EXECUTABLE_PATH` must exist and be runnable, and `COMMAND_ARGS` must be a valid JSON array. |
 | App starts under `dev` unexpectedly | `SPRING_PROFILES_ACTIVE` not set to `prod`; the base profile falls back to dev-friendly defaults. |

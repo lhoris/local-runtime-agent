@@ -1,10 +1,10 @@
 spring:
   datasource:
     # All values must come from the environment in production; no defaults.
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}?sslmode=${DB_SSLMODE:require}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=${DB_USE_SSL:false}&requireSSL=${DB_USE_SSL:false}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_MAX:10}
       minimum-idle: ${DB_POOL_MIN:2}

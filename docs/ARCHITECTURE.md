@@ -56,8 +56,8 @@ Agent는 중앙 서버 없이도 자체 동작하는 자율 루프(Autonomous Lo
 ```
 Windows/Linux PC                     Central Server              Shared Database
 ┌─────────────────┐                 ┌──────────────┐            ┌──────────────┐
-│ Spring Boot     │                 │ Spring Boot  │            │ PostgreSQL   │
-│ Agent           │ ←polls every 30s→ │ Server      │ ←→ READ/WRITE │ MySQL       │
+│ Spring Boot     │                 │ Spring Boot  │            │ MariaDB 11.8 │
+│ Agent           │ ←polls every 30s→ │ Server      │ ←→ READ/WRITE │              │
 │                 │                 │              │            │              │
 │ ┌─────────────┐ │                 │ • Status     │            │ 테이블:       │
 │ │ Process Mgr │ │                 │   Aggregation│            │ • agent_info │
@@ -110,7 +110,7 @@ Agent가 DB를 주기적으로 폴링하여 명령을 확인. 복잡한 메시�
 | 계층 | 역할 | 기술 스택 |
 |------|------|---------|
 | **Agent (PC Local)** | 프로세스 라이프사이클, 모니터링, 자동 복구 | Spring Boot, ProcessBuilder, JVM |
-| **Shared Database** | 상태 저장소, 명령 큐, 파라미터 저장소 | PostgreSQL / MySQL |
+| **Shared Database** | 상태 저장소, 명령 큐, 파라미터 저장소 | MariaDB 11.8 |
 | **Central Server** | 명령 디스패치, 상태 수집, 대시보드 | Spring Boot, REST API |
 | **Python Processes** | 실제 AI 모델 실행 | Python, 선택적 REST API |
 
@@ -888,7 +888,7 @@ agent:
   health_check_interval_sec: 30
 
 database:
-  url: jdbc:postgresql://central-db:5432/agent_db
+  url: jdbc:mysql://central-db:3306/agent_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
   username: ${DB_USER}
   password: ${DB_PASSWORD}
 

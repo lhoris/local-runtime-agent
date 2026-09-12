@@ -1,5 +1,5 @@
 -- Local Runtime Agent - Enterprise Standard Schema (ARCHITECTURE.md §5)
--- Dialect: PostgreSQL (H2 test with PostgreSQL mode)
+-- Dialect: MariaDB 11.8
 -- Clean slate: Drop old tables, create TB_M26_* only
 
 -- Drop existing tables if they exist (legacy cleanup)
