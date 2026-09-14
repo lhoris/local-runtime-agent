@@ -142,7 +142,7 @@ The installer lays the agent out as follows:
    java -version  # should print version 21.x
    ```
 
-2. **PostgreSQL** reachable with working credentials.
+2. **MariaDB 11.8** reachable with working credentials.
 
 3. **WinSW.exe** — download from [releases](https://github.com/winsw/winsw/releases).
    Look for `WinSW-x64.exe` (x64 systems). Rename it to `WinSW.exe`.
@@ -268,7 +268,7 @@ For testing or troubleshooting without installing a service:
 ```powershell
 cd C:\LRA
 $env:SPRING_PROFILES_ACTIVE = "prod"
-$env:DB_HOST = "your-postgres-host"
+$env:DB_HOST = "your-mariadb-host"
 $env:DB_NAME = "lra_db"
 $env:DB_USER = "postgres"
 $env:DB_PASSWORD = "your-password"

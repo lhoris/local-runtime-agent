@@ -21,7 +21,7 @@ Windows Service / Linux systemd 로 상시 구동하도록 설계되었다.
 | 프레임워크 | Spring Boot 3.4.1 |
 | 빌드 도구 | Maven Wrapper (`./mvnw`, 3.9+) |
 | DB 마이그레이션 | Flyway |
-| 데이터베이스 | PostgreSQL (운영) / H2 (테스트) |
+| 데이터베이스 | MariaDB 11.8 (운영) / H2 (테스트) |
 
 ## 패키지 구조
 
@@ -47,7 +47,7 @@ com.lra
 ### 테스트
 
 ```bash
-./mvnw test        # 70 tests, 0 failures (H2 인메모리 사용, PostgreSQL 불필요)
+./mvnw test        # 69 tests, 0 failures (4 disabled) (H2 인메모리 사용, MariaDB 11.8 불필요)
 ```
 
 단위 테스트와 E2E 통합 테스트(`SystemIntegrationTest`, 4개 시나리오: 상태 등록/폴링, 명령 발행/실행,
@@ -60,7 +60,7 @@ Spring 프로필별 설정 파일을 제공한다. 프로필 미지정 시 `appl
 | 파일 | 프로필 | 용도 |
 |------|--------|------|
 | `application.yml` | (공통) | 기본값, 환경변수 바인딩 |
-| `application-dev.yml` | `dev` | 로컬 PostgreSQL, SQL 로깅, DEBUG |
+| `application-dev.yml` | `dev` | 로컬 MariaDB 11.8, SQL 로깅, DEBUG |
 | `application-prod.yml` | `prod` | 환경변수 필수, TLS 옵션, INFO |
 | `application-test.yml` | `test` | H2 인메모리, Flyway 자동 마이그레이션 |
 
@@ -81,8 +81,8 @@ SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `SPRING_PROFILES_ACTIVE` | (없음) | 활성 프로필 (`dev`/`prod`/`test`) |
-| `DB_HOST` | `localhost` | PostgreSQL 호스트 |
-| `DB_PORT` | `5432` | PostgreSQL 포트 |
+| `DB_HOST` | `localhost` | MariaDB 11.8 호스트 |
+| `DB_PORT` | `3306` | MariaDB 11.8 포트 |
 | `DB_NAME` | `agent_db` | 데이터베이스명 |
 | `DB_USER` | (필수) | DB 사용자 |
 | `DB_PASSWORD` | (필수) | DB 비밀번호 |
