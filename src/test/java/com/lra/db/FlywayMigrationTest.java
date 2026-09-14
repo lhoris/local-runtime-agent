@@ -21,8 +21,8 @@ class FlywayMigrationTest {
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 
         String[] tables = {
-            "agent_info", "process_config", "agent_status", "commands",
-            "model_parameters", "execution_log"
+            "TB_M26_AGENT", "TB_M26_PROCESS_CONFIG", "TB_M26_MODEL_PROCESS", "TB_M26_COMMAND",
+            "TB_M26_MODEL_PARAMETER", "TB_M26_EXECUTION_LOG"
         };
         for (String table : tables) {
             Integer count = jdbc.queryForObject(
@@ -33,10 +33,10 @@ class FlywayMigrationTest {
 
         Integer views = jdbc.queryForObject(
             "SELECT COUNT(*) FROM information_schema.views "
-                + "WHERE UPPER(table_name) = 'MODEL_STATUS'", Integer.class);
-        assertThat(views).as("view model_status exists").isEqualTo(1);
+                + "WHERE UPPER(table_name) = 'V_M26_MODEL_STATUS'", Integer.class);
+        assertThat(views).as("view V_M26_MODEL_STATUS exists").isEqualTo(1);
 
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM model_status", Integer.class))
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM V_M26_MODEL_STATUS", Integer.class))
             .isZero();
     }
 }
