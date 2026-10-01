@@ -10,11 +10,9 @@ import com.lra.common.enums.CommandType;
 import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ExecutionLog;
-import com.lra.db.entity.ProcessConfig;
 import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
-import com.lra.db.repository.ProcessConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +44,6 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     private final String agentId;
     private final ProcessManager processManager;
-    private final ProcessConfigRepository processConfigRepository;
     private final ModelProcessRepository modelProcessRepository;
     private final CommandRepository commandRepository;
     private final ExecutionLogRepository executionLogRepository;
@@ -56,13 +53,11 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     public DefaultDBSyncManager(@Value("${agent.id}") String agentId,
                                 ProcessManager processManager,
-                                ProcessConfigRepository processConfigRepository,
                                 ModelProcessRepository modelProcessRepository,
                                 CommandRepository commandRepository,
                                 ExecutionLogRepository executionLogRepository) {
         this.agentId = agentId;
         this.processManager = processManager;
-        this.processConfigRepository = processConfigRepository;
         this.modelProcessRepository = modelProcessRepository;
         this.commandRepository = commandRepository;
         this.executionLogRepository = executionLogRepository;
@@ -84,7 +79,8 @@ public class DefaultDBSyncManager implements DBSyncManager {
         List<ProcessStatus> statuses = processManager.getAllStatus();
         Instant now = Instant.now();
         for (ProcessStatus status : statuses) {
-            ModelProcess record = new ModelProcess();
+            ModelProcess record = modelProcessRepository.findById(status.getModelId())
+                    .orElseGet(ModelProcess::new);
             record.setProcessId(status.getModelId());
             record.setAgentId(agentId);
             record.setState(status.getState() != null ? status.getState().toString() : null);
@@ -148,7 +144,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
         String modelId = cmd.getProcessId();
 
         switch (type) {
-            case START -> processManager.startProcess(modelId, requireConfig(modelId));
+            case START -> processManager.startProcess(modelId, requireProcess(modelId));
             case STOP -> processManager.stopProcess(modelId, StopStrategy.GRACEFUL);
             case RESTART -> processManager.restartProcess(modelId);
             case PARAM_UPDATE -> {
@@ -192,10 +188,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
         }
     }
 
-    private ProcessConfig requireConfig(String modelId) {
-        return processConfigRepository.findById(modelId)
+    private ModelProcess requireProcess(String modelId) {
+        return modelProcessRepository.findById(modelId)
                 .orElseThrow(() -> new IllegalStateException(
-                        "No process config found for model: " + modelId));
+                        "No model process found: " + modelId));
     }
 
     private Map<String, Object> snapshotStatus() {

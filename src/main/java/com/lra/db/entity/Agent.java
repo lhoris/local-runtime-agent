@@ -18,7 +18,7 @@ public class Agent {
 
     @Id
     @NotBlank
-    @Column(name = "AGENT_ID", length = 22)
+    @Column(name = "AGENT_ID", length = 64)
     private String agentId;
 
     @Column(name = "HOSTNAME", length = 256)

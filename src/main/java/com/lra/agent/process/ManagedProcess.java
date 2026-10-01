@@ -1,7 +1,7 @@
 package com.lra.agent.process;
 
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import java.time.Instant;
 
 /**
@@ -11,16 +11,16 @@ import java.time.Instant;
 class ManagedProcess {
 
     private final String modelId;
-    private ProcessConfig config;
+    private ModelProcess definition;
     private Process process;
     private ProcessState state;
     private Integer pid;
     private Instant startTime;
     private int crashCount;
 
-    ManagedProcess(String modelId, ProcessConfig config) {
+    ManagedProcess(String modelId, ModelProcess definition) {
         this.modelId = modelId;
-        this.config = config;
+        this.definition = definition;
         this.state = ProcessState.STOPPED;
     }
 
@@ -28,12 +28,12 @@ class ManagedProcess {
         return modelId;
     }
 
-    ProcessConfig getConfig() {
-        return config;
+    ModelProcess getDefinition() {
+        return definition;
     }
 
-    void setConfig(ProcessConfig config) {
-        this.config = config;
+    void setDefinition(ModelProcess definition) {
+        this.definition = definition;
     }
 
     Process getProcess() {
@@ -77,7 +77,17 @@ class ManagedProcess {
     }
 
     boolean isAlive() {
-        return process != null && process.isAlive();
+        if (process != null) {
+            return process.isAlive();
+        }
+        if (pid == null) {
+            return false;
+        }
+        try {
+            return ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     long uptimeSec() {

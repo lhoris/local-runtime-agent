@@ -1,7 +1,7 @@
 package com.lra.agent.process;
 
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -44,9 +44,9 @@ public class DefaultProcessMonitor implements ProcessMonitor {
             if (mp.getState() != ProcessState.CRASHED) {
                 continue;
             }
-            ProcessConfig config = mp.getConfig();
-            boolean enabled = config != null && Boolean.TRUE.equals(config.getAutoRestart());
-            int maxAttempts = DefaultProcessManager.maxRestartAttempts(config);
+            ModelProcess definition = mp.getDefinition();
+            boolean enabled = definition != null && Boolean.TRUE.equals(definition.getAutoRestart());
+            int maxAttempts = DefaultProcessManager.maxRestartAttempts(definition);
 
             if (!enabled) {
                 log.info("Auto-restart disabled for {}, leaving STOPPED", mp.getModelId());
@@ -58,7 +58,7 @@ public class DefaultProcessMonitor implements ProcessMonitor {
                     mp.getModelId(), mp.getCrashCount(), maxAttempts);
                 // startProcess applies no delay itself; restart_delay_sec is honored
                 // by restartProcess. Here we restart immediately after detection.
-                processManager.startProcess(mp.getModelId(), config);
+                processManager.startProcess(mp.getModelId(), definition);
             } else {
                 log.error("Process {} reached max restart attempts ({}), giving up",
                     mp.getModelId(), maxAttempts);

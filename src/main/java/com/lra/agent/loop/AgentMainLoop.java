@@ -3,47 +3,57 @@ package com.lra.agent.loop;
 import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
 import com.lra.agent.process.ProcessManager;
+import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
 import com.lra.agent.sync.DBSyncManager;
 import com.lra.common.enums.HealthStatus;
 import com.lra.common.enums.ProcessState;
+import com.lra.db.entity.ModelProcess;
+import com.lra.db.repository.ModelProcessRepository;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
- * Periodic agent loop that integrates the core components (ARCHITECTURE.md §7.2).
- * Each cycle runs, in order: Monitor -> HealthCheck -> AutoRestart (crash/resource
- * detection) -> PollDB/ExecuteCommands -> SyncStatus.
+ * Periodic agent loop.
  *
- * <p>Every step is isolated: a failure in one step is logged and does not abort
- * the remaining steps or the cycle. {@link HealthChecker} and {@link DBSyncManager}
- * are resolved lazily via {@link ObjectProvider} so the agent can boot and run its
- * process/state steps before those components (Tasks #6/#7) are wired in.
+ * <p>The order is intentionally plain: load the model-process rows this agent
+ * owns, check those rows against the local runtime, recover what can be recovered,
+ * execute new commands, then publish the latest status.
  */
 @Component
 public class AgentMainLoop {
 
     private static final Logger log = LoggerFactory.getLogger(AgentMainLoop.class);
 
+    private final String agentId;
     private final ProcessManager processManager;
+    private final ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider;
     private final StateManager stateManager;
     private final ObjectProvider<HealthChecker> healthCheckerProvider;
+    private final ObjectProvider<ProcessMonitor> processMonitorProvider;
     private final ObjectProvider<DBSyncManager> dbSyncManagerProvider;
 
-    public AgentMainLoop(ProcessManager processManager,
+    public AgentMainLoop(@Value("${agent.id}") String agentId,
+                         ProcessManager processManager,
+                         ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider,
                          StateManager stateManager,
                          ObjectProvider<HealthChecker> healthCheckerProvider,
+                         ObjectProvider<ProcessMonitor> processMonitorProvider,
                          ObjectProvider<DBSyncManager> dbSyncManagerProvider) {
+        this.agentId = agentId;
         this.processManager = processManager;
+        this.modelProcessRepositoryProvider = modelProcessRepositoryProvider;
         this.stateManager = stateManager;
         this.healthCheckerProvider = healthCheckerProvider;
+        this.processMonitorProvider = processMonitorProvider;
         this.dbSyncManagerProvider = dbSyncManagerProvider;
     }
 
@@ -52,31 +62,52 @@ public class AgentMainLoop {
         long startedAt = System.currentTimeMillis();
         log.info("Agent loop cycle started");
 
-        List<ProcessStatus> statuses = monitor();
-        healthCheck(statuses);         // 프로세스가 응답하는가?
-        detect(statuses);
-        pollPendingCommands();         // 명령어가 있는가?(혹시 뭔가 일할게 있나?)
-        syncStatus();                  // Agent의 상태를 DB에 저장 (heartbeat 포함)
+        List<ModelProcess> processes = loadProcessDefinitionsFromDb();
+        List<ProcessStatus> statuses = checkManagedProcessSafety(processes);
+        healthCheckRunningProcesses(statuses);
+        detectUnsafeProcesses(statuses);
+        recoverCrashedProcesses();
+        pollPendingCommands();
+        publishCurrentStatus();
 
         log.info("Agent loop cycle completed in {} ms", System.currentTimeMillis() - startedAt);
     }
 
-    /** Step 1 — snapshot every managed process. */
-    private List<ProcessStatus> monitor() {
+    /** Step 1: read the processes this agent is responsible for supervising. */
+    private List<ModelProcess> loadProcessDefinitionsFromDb() {
+        ModelProcessRepository modelProcessRepository = modelProcessRepositoryProvider.getIfAvailable();
+        if (modelProcessRepository == null) {
+            return List.of();
+        }
         try {
-            List<ProcessStatus> statuses = processManager.getAllStatus();
-            for (ProcessStatus status : statuses) {
-                log.debug("Process {} state: {}", status.getModelId(), status.getState());
-            }
-            return statuses;
+            List<ModelProcess> definitions = modelProcessRepository.findByAgentId(agentId);
+            log.debug("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
+            return definitions;
         } catch (RuntimeException ex) {
-            log.warn("Monitor step failed", ex);
+            log.warn("Loading model process definitions failed", ex);
             return List.of();
         }
     }
 
-    /** Step 2 — health-check RUNNING processes and reflect UNHEALTHY into state. */
-    private void healthCheck(List<ProcessStatus> statuses) {
+    /** Step 2: compare the in-memory view with the actual local process state. */
+    private List<ProcessStatus> checkManagedProcessSafety(List<ModelProcess> processes) {
+        List<ProcessStatus> statuses = new ArrayList<>();
+        for (ModelProcess process : processes) {
+            try {
+                ProcessStatus status = processManager.checkStatus(process);
+                if (status != null) {
+                    log.debug("Process {} state: {}", status.getModelId(), status.getState());
+                    statuses.add(status);
+                }
+            } catch (RuntimeException ex) {
+                log.warn("Process safety check failed for {}", process.getProcessId(), ex);
+            }
+        }
+        return statuses;
+    }
+
+    /** Step 3: ask each running process whether it is healthy. */
+    private void healthCheckRunningProcesses(List<ProcessStatus> statuses) {
         HealthChecker healthChecker = healthCheckerProvider.getIfAvailable();
         if (healthChecker == null) {
             return;
@@ -96,23 +127,36 @@ public class AgentMainLoop {
         }
     }
 
-    /** Step 3 — crash / resource detection drives auto-restart via health events. */
-    private void detect(List<ProcessStatus> statuses) {
+    /** Step 4: detect crashes and resource-limit breaches. */
+    private void detectUnsafeProcesses(List<ProcessStatus> statuses) {
         HealthChecker healthChecker = healthCheckerProvider.getIfAvailable();
         if (healthChecker == null) {
             return;
         }
         for (ProcessStatus status : statuses) {
             try {
-                healthChecker.detectCrash(status.getModelId());       // 프로세스가 살아있는가?
-                healthChecker.detectResource(status.getModelId());    // CPU/메모리가 정상인가?
+                healthChecker.detectCrash(status.getModelId());
+                healthChecker.detectResource(status.getModelId());
             } catch (HealthCheckException ex) {
                 log.warn("Crash/resource detection failed for {}", status.getModelId(), ex);
             }
         }
     }
 
-    /** Steps 4 & 5 — fetch and execute pending commands. */
+    /** Step 5: restart crashed processes when their row allows auto-restart. */
+    private void recoverCrashedProcesses() {
+        ProcessMonitor processMonitor = processMonitorProvider.getIfAvailable();
+        if (processMonitor == null) {
+            return;
+        }
+        try {
+            processMonitor.autoRestart();
+        } catch (RuntimeException ex) {
+            log.warn("Auto-restart step failed", ex);
+        }
+    }
+
+    /** Step 6: fetch and execute pending commands. */
     private void pollPendingCommands() {
         DBSyncManager dbSyncManager = dbSyncManagerProvider.getIfAvailable();
         if (dbSyncManager == null) {
@@ -125,8 +169,8 @@ public class AgentMainLoop {
         }
     }
 
-    /** Step 6 — publish process status to the central DB (including heartbeat). */
-    private void syncStatus() {
+    /** Step 7: publish process status to the central DB, including heartbeat. */
+    private void publishCurrentStatus() {
         DBSyncManager dbSyncManager = dbSyncManagerProvider.getIfAvailable();
         if (dbSyncManager == null) {
             return;

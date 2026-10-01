@@ -10,11 +10,10 @@ import com.lra.agent.process.StopStrategy;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ExecutionLog;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
-import com.lra.db.repository.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +39,6 @@ class DBSyncManagerTest {
     private static final String AGENT_ID = "agent-test";
 
     @Mock private ProcessManager processManager;
-    @Mock private ProcessConfigRepository processConfigRepository;
     @Mock private ModelProcessRepository modelProcessRepository;
     @Mock private CommandRepository commandRepository;
     @Mock private ExecutionLogRepository executionLogRepository;
@@ -54,7 +52,6 @@ class DBSyncManagerTest {
         dbSyncManager = new DefaultDBSyncManager(
                 AGENT_ID,
                 processManager,
-                processConfigRepository,
                 modelProcessRepository,
                 commandRepository,
                 executionLogRepository);
@@ -98,12 +95,12 @@ class DBSyncManagerTest {
         Command cmd = command("cmd-1", "START", "model-1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
-        when(processConfigRepository.findById("model-1"))
-                .thenReturn(Optional.of(new ProcessConfig()));
+        when(modelProcessRepository.findById("model-1"))
+                .thenReturn(Optional.of(new ModelProcess()));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).startProcess(eq("model-1"), any(ProcessConfig.class));
+        verify(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
         verify(commandRepository).save(argThat(c -> c.getCommandStatus().equals("COMPLETED")
                 && c.getProcessedAt() != null));
         verify(executionLogRepository).save(argThat((ExecutionLog logEntry) ->
@@ -116,10 +113,10 @@ class DBSyncManagerTest {
         Command cmd = command("cmd-1", "START", "model-1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
-        when(processConfigRepository.findById("model-1"))
-                .thenReturn(Optional.of(new ProcessConfig()));
+        when(modelProcessRepository.findById("model-1"))
+                .thenReturn(Optional.of(new ModelProcess()));
         doThrow(new RuntimeException("boom"))
-                .when(processManager).startProcess(eq("model-1"), any(ProcessConfig.class));
+                .when(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
 
         dbSyncManager.pollPendingCommands();
 
@@ -135,10 +132,10 @@ class DBSyncManagerTest {
         Command succeeding = command("cmd-2", "STOP", "model-2");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(failing, succeeding));
-        when(processConfigRepository.findById("model-1"))
-                .thenReturn(Optional.of(new ProcessConfig()));
+        when(modelProcessRepository.findById("model-1"))
+                .thenReturn(Optional.of(new ModelProcess()));
         doThrow(new RuntimeException("boom"))
-                .when(processManager).startProcess(eq("model-1"), any(ProcessConfig.class));
+                .when(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
 
         dbSyncManager.pollPendingCommands();
 

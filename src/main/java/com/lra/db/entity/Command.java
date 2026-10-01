@@ -22,14 +22,14 @@ public class Command {
 
     @Id
     @NotBlank
-    @Column(name = "COMMAND_ID", length = 22)
+    @Column(name = "COMMAND_ID", length = 64)
     private String commandId;
 
     @NotBlank
-    @Column(name = "AGENT_ID", length = 22, nullable = false)
+    @Column(name = "AGENT_ID", length = 64, nullable = false)
     private String agentId;
 
-    @Column(name = "PROCESS_ID", length = 22)
+    @Column(name = "PROCESS_ID", length = 64)
     private String processId;
 
     @Column(name = "COMMAND_TYPE", length = 32)

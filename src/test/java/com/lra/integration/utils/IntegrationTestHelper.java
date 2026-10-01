@@ -2,7 +2,6 @@ package com.lra.integration.utils;
 
 import com.lra.db.entity.Agent;
 import com.lra.db.entity.ModelProcess;
-import com.lra.db.entity.ProcessConfig;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -31,8 +30,8 @@ public final class IntegrationTestHelper {
         return agent;
     }
 
-    public static ProcessConfig newProcess(String processId, String agentId, String modelType) {
-        ProcessConfig config = new ProcessConfig();
+    public static ModelProcess newProcess(String processId, String agentId, String modelType) {
+        ModelProcess config = new ModelProcess();
         config.setProcessId(processId);
         config.setAgentId(agentId);
         config.setModelName("model-" + processId);

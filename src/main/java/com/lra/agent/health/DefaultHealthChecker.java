@@ -6,8 +6,8 @@ import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
 import com.lra.common.enums.HealthStatus;
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.ProcessConfigRepository;
+import com.lra.db.entity.ModelProcess;
+import com.lra.db.repository.ModelProcessRepository;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +24,16 @@ public class DefaultHealthChecker implements HealthChecker {
     private static final Logger log = LoggerFactory.getLogger(DefaultHealthChecker.class);
 
     private final ProcessManager processManager;
-    private final ProcessConfigRepository processConfigRepository;
+    private final ModelProcessRepository modelProcessRepository;
     private final CrashDetector crashDetector;
     private final StateManager stateManager;
 
     public DefaultHealthChecker(ProcessManager processManager,
-                                ProcessConfigRepository processConfigRepository,
+                                ModelProcessRepository modelProcessRepository,
                                 CrashDetector crashDetector,
                                 StateManager stateManager) {
         this.processManager = processManager;
-        this.processConfigRepository = processConfigRepository;
+        this.modelProcessRepository = modelProcessRepository;
         this.crashDetector = crashDetector;
         this.stateManager = stateManager;
     }
@@ -83,21 +83,21 @@ public class DefaultHealthChecker implements HealthChecker {
             return;
         }
 
-        ProcessConfig config = processConfigRepository.findById(modelId).orElse(null);
-        if (config == null) {
+        ModelProcess definition = modelProcessRepository.findById(modelId).orElse(null);
+        if (definition == null) {
             return;
         }
 
         boolean exceeded = false;
 
-        Integer cpuLimit = config.getCpuLimitPercent();
+        Integer cpuLimit = definition.getCpuLimitPercent();
         Float cpu = status.getCpuPercent();
         if (cpuLimit != null && cpuLimit > 0 && cpu != null && cpu > cpuLimit) {
             log.warn("CPU limit exceeded for {}: {}% > {}%", modelId, cpu, cpuLimit);
             exceeded = true;
         }
 
-        Integer memLimit = config.getMemoryLimitMb();
+        Integer memLimit = definition.getMemoryLimitMb();
         Integer mem = status.getMemoryMb();
         if (memLimit != null && memLimit > 0 && mem != null && mem > memLimit) {
             log.warn("Memory limit exceeded for {}: {}MB > {}MB", modelId, mem, memLimit);

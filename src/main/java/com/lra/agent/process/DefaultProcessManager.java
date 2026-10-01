@@ -3,7 +3,7 @@ package com.lra.agent.process;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import java.io.File;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -41,12 +41,30 @@ public class DefaultProcessManager implements ProcessManager {
     }
 
     @Override
-    public void startProcess(String modelId, ProcessConfig config) {
-        if (config == null) {
-            throw new IllegalArgumentException("config must not be null for " + modelId);
+    public ProcessStatus checkStatus(ModelProcess definition) {
+        if (definition == null || definition.getProcessId() == null || definition.getProcessId().isBlank()) {
+            throw new IllegalArgumentException("process definition must have a processId");
         }
-        ManagedProcess mp = processes.computeIfAbsent(modelId, id -> new ManagedProcess(id, config));
-        mp.setConfig(config);
+
+        String modelId = definition.getProcessId();
+        ManagedProcess mp = processes.computeIfAbsent(modelId, id -> new ManagedProcess(id, definition));
+        mp.setDefinition(definition);
+
+        if (mp.getProcess() == null) {
+            mp.setPid(definition.getPid());
+            mp.setState(parseState(definition.getState()));
+        }
+        refresh(mp);
+        return toStatus(mp);
+    }
+
+    @Override
+    public void startProcess(String modelId, ModelProcess definition) {
+        if (definition == null) {
+            throw new IllegalArgumentException("process definition must not be null for " + modelId);
+        }
+        ManagedProcess mp = processes.computeIfAbsent(modelId, id -> new ManagedProcess(id, definition));
+        mp.setDefinition(definition);
 
         if (mp.isAlive()) {
             log.warn("startProcess ignored, {} already running (pid={})", modelId, mp.getPid());
@@ -54,10 +72,10 @@ public class DefaultProcessManager implements ProcessManager {
         }
 
         transition(mp, ProcessState.STARTING);
-        List<String> command = buildCommand(config);
-        File workingDir = config.getWorkingDirectory() == null ? null
-            : new File(config.getWorkingDirectory());
-        Map<String, String> env = parseEnv(config.getEnvVars());
+        List<String> command = buildCommand(definition);
+        File workingDir = definition.getWorkingDirectory() == null ? null
+            : new File(definition.getWorkingDirectory());
+        Map<String, String> env = parseEnv(definition.getEnvVars());
 
         try {
             Process process = launcher.launch(command, workingDir, env);
@@ -81,25 +99,13 @@ public class DefaultProcessManager implements ProcessManager {
     @Override
     public void stopProcess(String modelId, StopStrategy strategy) {
         ManagedProcess mp = processes.get(modelId);
-        if (mp == null || mp.getProcess() == null) {
+        if (mp == null || !mp.isAlive()) {
             log.warn("stopProcess ignored, {} is not managed", modelId);
             return;
         }
-        Process process = mp.getProcess();
         transition(mp, ProcessState.STOPPING);
         try {
-            if (strategy == StopStrategy.FORCEFUL) {
-                process.destroyForcibly();
-                process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
-            } else {
-                process.destroy();
-                boolean exited = process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
-                if (!exited) {
-                    log.warn("Graceful stop timed out for {}, escalating to forceful kill", modelId);
-                    process.destroyForcibly();
-                    process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
-                }
-            }
+            stopAliveProcess(mp, strategy);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Interrupted while stopping {}", modelId);
@@ -115,10 +121,10 @@ public class DefaultProcessManager implements ProcessManager {
             log.warn("restartProcess ignored, {} is not managed", modelId);
             return;
         }
-        ProcessConfig config = mp.getConfig();
+        ModelProcess definition = mp.getDefinition();
         stopProcess(modelId, StopStrategy.GRACEFUL);
-        sleepSeconds(restartDelaySec(config));
-        startProcess(modelId, config);
+        sleepSeconds(restartDelaySec(definition));
+        startProcess(modelId, definition);
     }
 
     @Override
@@ -172,22 +178,25 @@ public class DefaultProcessManager implements ProcessManager {
         return status;
     }
 
-    static int maxRestartAttempts(ProcessConfig config) {
-        Integer max = config == null ? null : config.getMaxRestartAttempts();
+    static int maxRestartAttempts(ModelProcess definition) {
+        Integer max = definition == null ? null : definition.getMaxRestartAttempts();
         return max == null ? DEFAULT_MAX_RESTART_ATTEMPTS : max;
     }
 
-    private static int restartDelaySec(ProcessConfig config) {
-        Integer delay = config == null ? null : config.getRestartDelaySec();
+    private static int restartDelaySec(ModelProcess definition) {
+        Integer delay = definition == null ? null : definition.getRestartDelaySec();
         return delay == null ? 0 : delay;
     }
 
     // --- helpers -----------------------------------------------------------
 
-    private List<String> buildCommand(ProcessConfig config) {
+    private List<String> buildCommand(ModelProcess definition) {
         List<String> command = new ArrayList<>();
-        command.add(config.getExecutablePath());
-        command.addAll(parseArgs(config.getCommandArgs()));
+        if (definition.getExecutablePath() == null || definition.getExecutablePath().isBlank()) {
+            throw new IllegalArgumentException("executablePath is required for " + definition.getProcessId());
+        }
+        command.add(definition.getExecutablePath());
+        command.addAll(parseArgs(definition.getCommandArgs()));
         return command;
     }
 
@@ -243,6 +252,50 @@ public class DefaultProcessManager implements ProcessManager {
             return process.exitValue();
         } catch (IllegalThreadStateException e) {
             return null;
+        }
+    }
+
+    private void stopAliveProcess(ManagedProcess mp, StopStrategy strategy) throws InterruptedException {
+        Process process = mp.getProcess();
+        if (process != null) {
+            if (strategy == StopStrategy.FORCEFUL) {
+                process.destroyForcibly();
+                process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
+                return;
+            }
+
+            process.destroy();
+            boolean exited = process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
+            if (!exited) {
+                log.warn("Graceful stop timed out for {}, escalating to forceful kill", mp.getModelId());
+                process.destroyForcibly();
+                process.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
+            }
+            return;
+        }
+
+        Integer pid = mp.getPid();
+        if (pid == null) {
+            return;
+        }
+        ProcessHandle.of(pid).ifPresent(handle -> {
+            if (strategy == StopStrategy.FORCEFUL) {
+                handle.destroyForcibly();
+            } else {
+                handle.destroy();
+            }
+        });
+    }
+
+    private ProcessState parseState(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return ProcessState.STOPPED;
+        }
+        try {
+            return ProcessState.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Unknown stored process state '{}', treating as STOPPED", raw);
+            return ProcessState.STOPPED;
         }
     }
 }

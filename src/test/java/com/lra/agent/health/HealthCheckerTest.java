@@ -13,8 +13,8 @@ import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
 import com.lra.common.enums.HealthStatus;
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
-import com.lra.db.repository.ProcessConfigRepository;
+import com.lra.db.entity.ModelProcess;
+import com.lra.db.repository.ModelProcessRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class HealthCheckerTest {
     @Mock
     private ProcessManager processManager;
     @Mock
-    private ProcessConfigRepository processConfigRepository;
+    private ModelProcessRepository modelProcessRepository;
     @Mock
     private CrashDetector crashDetector;
     @Mock
@@ -43,7 +43,7 @@ class HealthCheckerTest {
     @BeforeEach
     void setUp() {
         healthChecker = new DefaultHealthChecker(
-            processManager, processConfigRepository, crashDetector, stateManager);
+            processManager, modelProcessRepository, crashDetector, stateManager);
     }
 
     private ProcessStatus runningStatus() {
@@ -134,9 +134,9 @@ class HealthCheckerTest {
         status.setCpuPercent(95f);
         when(processManager.getStatus(MODEL_ID)).thenReturn(status);
 
-        ProcessConfig config = new ProcessConfig();
-        config.setCpuLimitPercent(90);
-        when(processConfigRepository.findById(MODEL_ID)).thenReturn(Optional.of(config));
+        ModelProcess definition = new ModelProcess();
+        definition.setCpuLimitPercent(90);
+        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
 
         healthChecker.detectResource(MODEL_ID);
 
@@ -149,9 +149,9 @@ class HealthCheckerTest {
         status.setMemoryMb(2048);
         when(processManager.getStatus(MODEL_ID)).thenReturn(status);
 
-        ProcessConfig config = new ProcessConfig();
-        config.setMemoryLimitMb(1024);
-        when(processConfigRepository.findById(MODEL_ID)).thenReturn(Optional.of(config));
+        ModelProcess definition = new ModelProcess();
+        definition.setMemoryLimitMb(1024);
+        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
 
         healthChecker.detectResource(MODEL_ID);
 
@@ -165,10 +165,10 @@ class HealthCheckerTest {
         status.setMemoryMb(512);
         when(processManager.getStatus(MODEL_ID)).thenReturn(status);
 
-        ProcessConfig config = new ProcessConfig();
-        config.setCpuLimitPercent(90);
-        config.setMemoryLimitMb(1024);
-        when(processConfigRepository.findById(MODEL_ID)).thenReturn(Optional.of(config));
+        ModelProcess definition = new ModelProcess();
+        definition.setCpuLimitPercent(90);
+        definition.setMemoryLimitMb(1024);
+        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
 
         healthChecker.detectResource(MODEL_ID);
 

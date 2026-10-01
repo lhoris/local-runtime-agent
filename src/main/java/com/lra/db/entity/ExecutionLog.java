@@ -21,13 +21,13 @@ public class ExecutionLog {
     /** Application-assigned identifier (not DB-generated). */
     @Id
     @NotBlank
-    @Column(name = "LOG_ID", length = 22)
+    @Column(name = "LOG_ID", length = 64)
     private String logId;
 
-    @Column(name = "AGENT_ID", length = 22)
+    @Column(name = "AGENT_ID", length = 64)
     private String agentId;
 
-    @Column(name = "PROCESS_ID", length = 22)
+    @Column(name = "PROCESS_ID", length = 64)
     private String processId;
 
     @Column(name = "COMMAND_TYPE", length = 32)

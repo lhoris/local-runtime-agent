@@ -1,6 +1,6 @@
 package com.lra.agent.process;
 
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import java.util.List;
 
 /**
@@ -8,8 +8,11 @@ import java.util.List;
  */
 public interface ProcessManager {
 
-    /** Launch the process for {@code modelId} using {@code config}. */
-    void startProcess(String modelId, ProcessConfig config);
+    /** Check one database-defined process against the local runtime state. */
+    ProcessStatus checkStatus(ModelProcess definition);
+
+    /** Launch the process for {@code modelId} using {@code definition}. */
+    void startProcess(String modelId, ModelProcess definition);
 
     /** Terminate the process for {@code modelId} using the given strategy. */
     void stopProcess(String modelId, StopStrategy strategy);

@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lra.common.enums.ProcessState;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +29,8 @@ class ProcessManagerTest {
         monitor = new DefaultProcessMonitor(manager);
     }
 
-    private ProcessConfig config(boolean autoRestart, int maxAttempts) {
-        ProcessConfig c = new ProcessConfig();
+    private ModelProcess config(boolean autoRestart, int maxAttempts) {
+        ModelProcess c = new ModelProcess();
         c.setProcessId("m1");
         c.setAgentId("agent-1");
         c.setExecutablePath("python");

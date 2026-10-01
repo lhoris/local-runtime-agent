@@ -10,13 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.lra.db.entity.Agent;
 import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.ExecutionLog;
-import com.lra.db.entity.ProcessConfig;
 import com.lra.db.repository.AgentRepository;
 import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
-import com.lra.db.repository.ProcessConfigRepository;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,9 +48,6 @@ class ApiControllerTest {
 
     @Autowired
     ExecutionLogRepository executionLogRepository;
-
-    @Autowired
-    ProcessConfigRepository processConfigRepository;
 
     @Test
     void listAgentsReturnsAgentsWithProcessesInSnakeCase() throws Exception {
@@ -171,17 +166,18 @@ class ApiControllerTest {
     }
 
     private void seedProcess(String processId, String agentId) {
-        ProcessConfig config = new ProcessConfig();
-        config.setProcessId(processId);
-        config.setAgentId(agentId);
-        config.setModelName("model-" + processId);
-        config.setModelType("INFERENCE");
-        processConfigRepository.save(config);
+        ModelProcess process = new ModelProcess();
+        process.setProcessId(processId);
+        process.setAgentId(agentId);
+        process.setModelName("model-" + processId);
+        process.setModelType("INFERENCE");
+        modelProcessRepository.save(process);
     }
 
     private void seedStatus(String statusId, String agentId, String processId,
                             String state, String health, int pid) {
-        ModelProcess status = new ModelProcess();
+        ModelProcess status = modelProcessRepository.findById(processId)
+                .orElseGet(ModelProcess::new);
         status.setProcessId(processId);
         status.setAgentId(agentId);
         status.setState(state);

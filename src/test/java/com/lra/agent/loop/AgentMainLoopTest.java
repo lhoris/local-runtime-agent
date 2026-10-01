@@ -3,12 +3,15 @@ package com.lra.agent.loop;
 import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
 import com.lra.agent.process.ProcessManager;
+import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
 import com.lra.agent.sync.DBSyncManager;
 import com.lra.common.enums.HealthStatus;
 import com.lra.common.enums.ProcessState;
+import com.lra.db.entity.ModelProcess;
+import com.lra.db.repository.ModelProcessRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
@@ -27,8 +30,10 @@ import static org.mockito.Mockito.when;
 class AgentMainLoopTest {
 
     private ProcessManager processManager;
+    private ModelProcessRepository modelProcessRepository;
     private StateManager stateManager;
     private HealthChecker healthChecker;
+    private ProcessMonitor processMonitor;
     private DBSyncManager dbSyncManager;
 
     private AgentMainLoop loop;
@@ -36,31 +41,39 @@ class AgentMainLoopTest {
     @BeforeEach
     void setUp() {
         processManager = mock(ProcessManager.class);
+        modelProcessRepository = mock(ModelProcessRepository.class);
         stateManager = mock(StateManager.class);
         healthChecker = mock(HealthChecker.class);
+        processMonitor = mock(ProcessMonitor.class);
         dbSyncManager = mock(DBSyncManager.class);
-        loop = new AgentMainLoop(processManager, stateManager,
-                provider(healthChecker), provider(dbSyncManager));
+        loop = new AgentMainLoop("agent-test", processManager, provider(modelProcessRepository), stateManager,
+                provider(healthChecker), provider(processMonitor), provider(dbSyncManager));
     }
 
     @Test
     void runsStepsInOrder() throws Exception {
-        when(processManager.getAllStatus()).thenReturn(List.of(running("m1")));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition)).thenReturn(running("m1"));
         when(healthChecker.checkHealth("m1")).thenReturn(HealthStatus.HEALTHY);
 
         loop.agentLoop();
 
-        var order = inOrder(processManager, healthChecker, dbSyncManager);
-        order.verify(processManager).getAllStatus();
+        var order = inOrder(modelProcessRepository, processManager, healthChecker, processMonitor, dbSyncManager);
+        order.verify(modelProcessRepository).findByAgentId("agent-test");
+        order.verify(processManager).checkStatus(definition);
         order.verify(healthChecker).checkHealth("m1");
         order.verify(healthChecker).detectCrash("m1");
+        order.verify(processMonitor).autoRestart();
         order.verify(dbSyncManager).pollPendingCommands();
         order.verify(dbSyncManager).syncAgentStatus();
     }
 
     @Test
     void unhealthyCheckTransitionsState() throws Exception {
-        when(processManager.getAllStatus()).thenReturn(List.of(running("m1")));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition)).thenReturn(running("m1"));
         when(healthChecker.checkHealth("m1")).thenReturn(HealthStatus.UNHEALTHY);
 
         loop.agentLoop();
@@ -70,8 +83,10 @@ class AgentMainLoopTest {
 
     @Test
     void nonRunningProcessSkipsHealthCheck() throws Exception {
-        when(processManager.getAllStatus())
-                .thenReturn(List.of(new ProcessStatus("m1", ProcessState.STOPPED)));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition))
+                .thenReturn(new ProcessStatus("m1", ProcessState.STOPPED));
 
         loop.agentLoop();
 
@@ -80,7 +95,9 @@ class AgentMainLoopTest {
 
     @Test
     void healthCheckFailureDoesNotStopCycle() throws Exception {
-        when(processManager.getAllStatus()).thenReturn(List.of(running("m1")));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition)).thenReturn(running("m1"));
         when(healthChecker.checkHealth("m1")).thenThrow(new HealthCheckException("down"));
 
         loop.agentLoop();
@@ -90,7 +107,9 @@ class AgentMainLoopTest {
 
     @Test
     void monitorFailureStillRunsDbSync() {
-        when(processManager.getAllStatus()).thenThrow(new RuntimeException("boom"));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition)).thenThrow(new RuntimeException("boom"));
 
         loop.agentLoop();
 
@@ -100,7 +119,9 @@ class AgentMainLoopTest {
 
     @Test
     void invalidStateTransitionIsSwallowed() throws Exception {
-        when(processManager.getAllStatus()).thenReturn(List.of(running("m1")));
+        ModelProcess definition = definition("m1");
+        when(modelProcessRepository.findByAgentId("agent-test")).thenReturn(List.of(definition));
+        when(processManager.checkStatus(definition)).thenReturn(running("m1"));
         when(healthChecker.checkHealth("m1")).thenReturn(HealthStatus.UNHEALTHY);
         doThrow(new InvalidStateTransitionException(ProcessState.RUNNING, ProcessState.UNHEALTHY))
                 .when(stateManager).transitionTo(eq("m1"), eq(ProcessState.UNHEALTHY));
@@ -112,17 +133,23 @@ class AgentMainLoopTest {
 
     @Test
     void missingOptionalComponentsAreSkipped() {
-        AgentMainLoop bareLoop = new AgentMainLoop(processManager, stateManager,
-                emptyProvider(), emptyProvider());
-        when(processManager.getAllStatus()).thenReturn(List.of(running("m1")));
+        AgentMainLoop bareLoop = new AgentMainLoop("agent-test", processManager, emptyProvider(), stateManager,
+                emptyProvider(), emptyProvider(), emptyProvider());
 
         bareLoop.agentLoop();
 
-        verify(processManager).getAllStatus();
+        verify(processManager, never()).checkStatus(any());
     }
 
     private static ProcessStatus running(String modelId) {
         return new ProcessStatus(modelId, ProcessState.RUNNING);
+    }
+
+    private static ModelProcess definition(String processId) {
+        ModelProcess process = new ModelProcess();
+        process.setProcessId(processId);
+        process.setAgentId("agent-test");
+        return process;
     }
 
     @SuppressWarnings("unchecked")

@@ -285,5 +285,5 @@ This runs the agent in the foreground; Ctrl+C to stop.
 | ------- | ------------------ |
 | Port `8080` already in use | Another process holds the port. Change `SERVER_PORT` (env) or `server.port` in `application.yml`. |
 | DB connection refused / auth failed | Verify DB creds in `/etc/lra-agent/lra-agent.env` (Linux) or the environment. Confirm MariaDB is reachable on the configured host/port. |
-| Managed process never starts | Check the row in `TB_M26_PROCESS_CONFIG`: `EXECUTABLE_PATH` must exist and be runnable, and `COMMAND_ARGS` must be a valid JSON array. |
+| Managed process never starts | Check the row in `TB_M26_MODEL_PROCESS`: `EXECUTABLE_PATH` must exist and be runnable, and `COMMAND_ARGS` must be a valid JSON array. |
 | App starts under `dev` unexpectedly | `SPRING_PROFILES_ACTIVE` not set to `prod`; the base profile falls back to dev-friendly defaults. |

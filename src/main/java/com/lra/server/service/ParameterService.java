@@ -5,9 +5,9 @@ import com.lra.common.dto.ParameterDto;
 import com.lra.common.dto.ParameterUpdateRequest;
 import com.lra.common.enums.CommandType;
 import com.lra.db.entity.ModelParameter;
-import com.lra.db.entity.ProcessConfig;
+import com.lra.db.entity.ModelProcess;
 import com.lra.db.repository.ModelParameterRepository;
-import com.lra.db.repository.ProcessConfigRepository;
+import com.lra.db.repository.ModelProcessRepository;
 import com.lra.server.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +23,14 @@ import java.util.UUID;
 public class ParameterService {
 
     private final ModelParameterRepository parameterRepository;
-    private final ProcessConfigRepository processConfigRepository;
+    private final ModelProcessRepository modelProcessRepository;
     private final CommandService commandService;
 
     public ParameterService(ModelParameterRepository parameterRepository,
-                            ProcessConfigRepository processConfigRepository,
+                            ModelProcessRepository modelProcessRepository,
                             CommandService commandService) {
         this.parameterRepository = parameterRepository;
-        this.processConfigRepository = processConfigRepository;
+        this.modelProcessRepository = modelProcessRepository;
         this.commandService = commandService;
     }
 
@@ -79,11 +79,11 @@ public class ParameterService {
     }
 
     private void enqueueRestart(String processId) {
-        ProcessConfig config = processConfigRepository.findById(processId)
+        ModelProcess process = modelProcessRepository.findById(processId)
                 .orElseThrow(() -> ApiException.badRequest(
                         "Cannot apply immediately: process not found: " + processId));
         commandService.createCommand(new CommandCreateRequest(
-                config.getAgentId(), processId, CommandType.RESTART, Map.of()));
+                process.getAgentId(), processId, CommandType.RESTART, Map.of()));
     }
 
     private ParameterDto toDto(ModelParameter param) {
