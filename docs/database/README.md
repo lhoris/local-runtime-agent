@@ -4,7 +4,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 
 ## Order
 
-1. Apply the approved `TB_M26_*` schema in MariaDB.
+1. Review and apply `schema.sql` in MariaDB.
 2. Run `verify-schema.sql` against the target database.
 3. Remove or archive the legacy `TB_M26_PROCESS_CONFIG` table after its data has been migrated into `TB_M26_MODEL_PROCESS`.
 4. Edit and run `seed-local-agent.sql` for each Agent machine.
