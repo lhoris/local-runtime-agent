@@ -156,6 +156,19 @@ class AgentMainLoopTest {
         verify(dbSyncManager, never()).syncAgentStatus();
     }
 
+    @Test
+    void processQueryFailureSkipsRemainingSteps() {
+        when(modelProcessRepository.findByAgentId("agent-test"))
+                .thenThrow(new RuntimeException("database unavailable"));
+
+        loop.agentLoop();
+
+        verify(processManager, never()).checkStatus(any());
+        verify(processMonitor, never()).autoRestart();
+        verify(dbSyncManager, never()).pollPendingCommands();
+        verify(dbSyncManager, never()).syncAgentStatus();
+    }
+
     private static ProcessStatus running(String modelId) {
         return new ProcessStatus(modelId, ProcessState.RUNNING);
     }
