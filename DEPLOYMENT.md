@@ -175,7 +175,6 @@ The service reads environment variables from Windows; set the DB credentials:
 [Environment]::SetEnvironmentVariable("DB_USER", "agent", "Machine")
 [Environment]::SetEnvironmentVariable("DB_PASSWORD", "your-password", "Machine")
 [Environment]::SetEnvironmentVariable("SERVER_PORT", "8080", "Machine")
-[Environment]::SetEnvironmentVariable("AGENT_ID", "agent-vm-01", "Machine")
 [Environment]::SetEnvironmentVariable("LOG_FILE", "C:\LRA\logs\local-runtime-agent.log", "Machine")
 ```
 

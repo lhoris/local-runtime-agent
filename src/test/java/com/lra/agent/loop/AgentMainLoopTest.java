@@ -2,6 +2,7 @@ package com.lra.agent.loop;
 
 import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
+import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.process.ProcessManager;
 import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 class AgentMainLoopTest {
 
     private ProcessManager processManager;
+    private AgentIdentityResolver agentIdentityResolver;
     private ModelProcessRepository modelProcessRepository;
     private StateManager stateManager;
     private HealthChecker healthChecker;
@@ -41,12 +43,14 @@ class AgentMainLoopTest {
     @BeforeEach
     void setUp() {
         processManager = mock(ProcessManager.class);
+        agentIdentityResolver = mock(AgentIdentityResolver.class);
         modelProcessRepository = mock(ModelProcessRepository.class);
         stateManager = mock(StateManager.class);
         healthChecker = mock(HealthChecker.class);
         processMonitor = mock(ProcessMonitor.class);
         dbSyncManager = mock(DBSyncManager.class);
-        loop = new AgentMainLoop("agent-test", processManager, provider(modelProcessRepository), stateManager,
+        when(agentIdentityResolver.resolveCurrentAgentId()).thenReturn(java.util.Optional.of("agent-test"));
+        loop = new AgentMainLoop(provider(agentIdentityResolver), processManager, provider(modelProcessRepository), stateManager,
                 provider(healthChecker), provider(processMonitor), provider(dbSyncManager));
     }
 
@@ -133,7 +137,7 @@ class AgentMainLoopTest {
 
     @Test
     void missingOptionalComponentsAreSkipped() {
-        AgentMainLoop bareLoop = new AgentMainLoop("agent-test", processManager, emptyProvider(), stateManager,
+        AgentMainLoop bareLoop = new AgentMainLoop(emptyProvider(), processManager, emptyProvider(), stateManager,
                 emptyProvider(), emptyProvider(), emptyProvider());
 
         bareLoop.agentLoop();

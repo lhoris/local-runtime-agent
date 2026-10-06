@@ -10,4 +10,6 @@ import java.util.List;
 public interface AgentRepository extends JpaRepository<Agent, String> {
 
     List<Agent> findByHostname(String hostname);
+
+    List<Agent> findByIpAddress(String ipAddress);
 }

@@ -25,7 +25,7 @@ reads all connection settings from the environment:
 | `DB_USER`, `DB_PASSWORD` | MariaDB credentials |
 | `DB_USE_SSL` | Enable SSL for MariaDB (true/false) |
 | `SERVER_PORT` | HTTP port (default 8080) |
-| `AGENT_ID` | Agent identifier |
+| `TB_M26_AGENT.IP_ADDRESS` | Agent identity is resolved from the local IP address |
 | `LOG_FILE` | Log file path |
 
 ## Run directly

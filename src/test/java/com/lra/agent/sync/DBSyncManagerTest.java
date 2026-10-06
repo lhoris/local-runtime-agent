@@ -2,6 +2,7 @@ package com.lra.agent.sync;
 
 import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
+import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.parameter.ParameterManager;
 import com.lra.agent.parameter.ValidationException;
 import com.lra.agent.process.ProcessManager;
@@ -38,6 +39,7 @@ class DBSyncManagerTest {
 
     private static final String AGENT_ID = "agent-test";
 
+    @Mock private AgentIdentityResolver agentIdentityResolver;
     @Mock private ProcessManager processManager;
     @Mock private ModelProcessRepository modelProcessRepository;
     @Mock private CommandRepository commandRepository;
@@ -50,11 +52,12 @@ class DBSyncManagerTest {
     @BeforeEach
     void setUp() {
         dbSyncManager = new DefaultDBSyncManager(
-                AGENT_ID,
+                agentIdentityResolver,
                 processManager,
                 modelProcessRepository,
                 commandRepository,
                 executionLogRepository);
+        when(agentIdentityResolver.resolveCurrentAgentId()).thenReturn(Optional.of(AGENT_ID));
     }
 
     private ProcessStatus runningStatus(String modelId) {

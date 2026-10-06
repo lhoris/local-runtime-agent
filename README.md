@@ -86,7 +86,7 @@ SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 | `DB_NAME` | `agent_db` | 데이터베이스명 |
 | `DB_USER` | (필수) | DB 사용자 |
 | `DB_PASSWORD` | (필수) | DB 비밀번호 |
-| `AGENT_ID` | `agent-<hostname>` | Agent 식별자 |
+| `TB_M26_AGENT.IP_ADDRESS` | - | 로컬 IP와 일치하는 Agent 식별자 자동 조회 |
 | `AGENT_POLLING_INTERVAL_SEC` | `30` | DB 폴링 주기(초) |
 | `AGENT_HEALTH_CHECK_INTERVAL_SEC` | `30` | 헬스체크 주기(초) |
 | `SERVER_PORT` | `8080` | HTTP 포트 |

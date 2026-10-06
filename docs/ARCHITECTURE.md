@@ -129,7 +129,7 @@ Agent가 DB를 주기적으로 폴링하여 명령을 확인. 복잡한 메시�
 
 ```java
 public interface ProcessManager {
-    void startProcess(String modelId, ProcessConfig config);
+    void startProcess(String modelId, ModelProcess config);
     void stopProcess(String modelId, StopStrategy strategy);
     void restartProcess(String modelId);
     ProcessStatus getStatus(String modelId);
@@ -207,15 +207,15 @@ public interface HealthChecker {
 
 ```java
 public interface ProcessHook {
-    void onBeforeStart(ProcessConfig config);
+    void onBeforeStart(ModelProcess config);
     void onAfterStart(Process process);
     void onBeforeStop(Process process);
     void onAfterStop();
-    void onCrash(ProcessConfig config);
+    void onCrash(ModelProcess config);
 }
 
 public interface HealthAdapter {
-    HealthStatus check(ProcessConfig config);
+    HealthStatus check(ModelProcess config);
     // 모델별 특수 health check 로직
 }
 ```
@@ -263,84 +263,44 @@ CREATE TABLE TB_M26_AGENT (
 ) COMMENT='Local Runtime Agent 정보';
 ```
 
-#### TB_M26_PROCESS_CONFIG
-```sql
-CREATE TABLE TB_M26_PROCESS_CONFIG (
-    -- Audit
-    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
-    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
-    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
-    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
-    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
-    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
-    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
-    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
-    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
-    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
-    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
-    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
-    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
-    
-    -- PK
-    PROCESS_ID VARCHAR(22) PRIMARY KEY COMMENT '프로세스 ID',
-    
-    -- Attributes
-    AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
-    MODEL_NAME VARCHAR(256) COMMENT '모델명',
-    MODEL_TYPE VARCHAR(64) COMMENT '모델 유형 (INFERENCE, TRAINING, RUNTIME)',
-    EXECUTABLE_PATH VARCHAR(512) COMMENT '실행 파일 경로',
-    WORKING_DIRECTORY VARCHAR(512) COMMENT '작업 디렉토리',
-    COMMAND_ARGS LONGTEXT COMMENT '명령 인자 (JSON)',
-    ENV_VARS LONGTEXT COMMENT '환경 변수 (JSON)',
-    AUTO_RESTART VARCHAR(1) DEFAULT 'Y' COMMENT '자동 재시작 여부',
-    MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT '최대 재시작 횟수',
-    RESTART_DELAY_SEC INT DEFAULT 10 COMMENT '재시작 대기 초 단위',
-    TIMEOUT_SEC INT DEFAULT 3600 COMMENT '타임아웃 초 단위',
-    MEMORY_LIMIT_MB INT COMMENT '메모리 제한 (MB)',
-    CPU_LIMIT_PERCENT INT COMMENT 'CPU 제한 (백분율)',
-    HEALTH_CHECK_ENABLED VARCHAR(1) DEFAULT 'Y' COMMENT 'Health Check 활성화 여부',
-    HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30 COMMENT 'Health Check 간격 초 단위',
-    HEALTH_CHECK_ENDPOINT VARCHAR(512) COMMENT 'Health Check REST API 엔드포인트',
-    METADATA LONGTEXT COMMENT '추가 메타정보 (JSON)'
-) COMMENT='프로세스 설정';
-```
-
 #### TB_M26_MODEL_PROCESS
 ```sql
 CREATE TABLE TB_M26_MODEL_PROCESS (
-    -- Audit
-    CREATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '생성Object유형',
-    CREATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '생성ObjectID',
-    CREATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '생성프로그램ID',
-    CREATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '생성일시',
-    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '최종변경Object유형',
-    LAST_UPDATED_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경ObjectID',
-    LAST_UPDATED_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '최종변경프로그램ID',
-    LAST_UPDATED_TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP() COMMENT '최종변경일시',
-    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT '데이터종료여부',
-    DATA_END_OBJECT_TYPE VARCHAR(1) DEFAULT NULL COMMENT '데이터종료Object유형',
-    DATA_END_OBJECT_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료ObjectID',
-    DATA_END_PROGRAM_ID VARCHAR(22) DEFAULT NULL COMMENT '데이터종료프로그램ID',
-    DATA_END_TIMESTAMP DATETIME DEFAULT NULL COMMENT '데이터종료일시',
-    
     -- PK
-    STATUS_ID VARCHAR(22) PRIMARY KEY COMMENT '상태 ID',
-    
-    -- Attributes
+    PROCESS_ID VARCHAR(22) PRIMARY KEY COMMENT 'Process ID',
+
+    -- Owner / definition
     AGENT_ID VARCHAR(22) COMMENT 'Agent ID',
-    PROCESS_ID VARCHAR(22) COMMENT '프로세스 ID',
-    PROCESS_STATE VARCHAR(32) COMMENT '프로세스 상태',
-    PROCESS_PID INT COMMENT '프로세스 PID',
-    CPU_PERCENT DECIMAL(5,2) COMMENT 'CPU 사용률',
-    MEMORY_MB INT COMMENT '메모리 사용량 (MB)',
-    HEALTH_STATUS VARCHAR(32) COMMENT 'Health 상태',
-    UPTIME_SEC BIGINT COMMENT '가동 시간 (초)',
-    CRASH_COUNT INT DEFAULT 0 COMMENT '비정상 종료 횟수',
-    LAST_HEALTH_CHECK DATETIME COMMENT '마지막 Health Check 일시',
-    LAST_CRASH_TIME DATETIME COMMENT '마지막 비정상 종료 일시',
-    LAST_HEARTBEAT DATETIME COMMENT '마지막 하트비트 일시',
-    ERROR_MESSAGE LONGTEXT COMMENT '에러 메시지'
-) COMMENT='Agent 상태';
+    MODEL_NAME VARCHAR(256) COMMENT 'Model name',
+    MODEL_TYPE VARCHAR(64) COMMENT 'Model type (INFERENCE, TRAINING, RUNTIME)',
+    EXECUTABLE_PATH VARCHAR(512) COMMENT 'Executable path',
+    WORKING_DIRECTORY VARCHAR(512) COMMENT 'Working directory',
+    COMMAND_ARGS LONGTEXT COMMENT 'Command arguments (JSON)',
+    ENV_VARS LONGTEXT COMMENT 'Environment variables (JSON)',
+    AUTO_RESTART VARCHAR(1) DEFAULT 'Y' COMMENT 'Auto restart flag',
+    MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT 'Max restart attempts',
+    RESTART_DELAY_SEC INT DEFAULT 10 COMMENT 'Restart delay seconds',
+    TIMEOUT_SEC INT DEFAULT 3600 COMMENT 'Timeout seconds',
+    MEMORY_LIMIT_MB INT COMMENT 'Memory limit MB',
+    CPU_LIMIT_PERCENT INT COMMENT 'CPU limit percent',
+    HEALTH_CHECK_ENABLED VARCHAR(1) DEFAULT 'Y' COMMENT 'Health check enabled',
+    HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30 COMMENT 'Health check interval seconds',
+    HEALTH_CHECK_ENDPOINT VARCHAR(512) COMMENT 'Health check endpoint',
+
+    -- Runtime status
+    PROCESS_STATE VARCHAR(32) COMMENT 'Process state',
+    PROCESS_PID INT COMMENT 'Process PID',
+    CPU_PERCENT DECIMAL(5,2) COMMENT 'CPU percent',
+    MEMORY_MB INT COMMENT 'Memory usage MB',
+    LAST_HEALTH_CHECK DATETIME COMMENT 'Last health check time',
+    LAST_HEARTBEAT DATETIME COMMENT 'Last heartbeat time',
+    HEALTH_STATUS VARCHAR(32) COMMENT 'Health status',
+    UPTIME_SEC BIGINT COMMENT 'Uptime seconds',
+    CRASH_COUNT INT DEFAULT 0 COMMENT 'Crash count',
+    LAST_CRASH_TIME DATETIME COMMENT 'Last crash time',
+    ERROR_MESSAGE LONGTEXT COMMENT 'Error message',
+    METADATA LONGTEXT COMMENT 'Additional metadata (JSON)'
+) COMMENT='Model process definition and runtime status';
 ```
 
 #### TB_M26_COMMAND
@@ -449,18 +409,17 @@ SELECT
     ai.HOSTNAME,
     pc.PROCESS_ID,
     pc.MODEL_NAME,
-    ast.PROCESS_STATE,
-    ast.PROCESS_PID,
-    ast.CPU_PERCENT,
-    ast.MEMORY_MB,
-    ast.HEALTH_STATUS,
-    ast.UPTIME_SEC,
-    ast.CRASH_COUNT,
-    ast.LAST_HEALTH_CHECK,
+    pc.PROCESS_STATE,
+    pc.PROCESS_PID,
+    pc.CPU_PERCENT,
+    pc.MEMORY_MB,
+    pc.HEALTH_STATUS,
+    pc.UPTIME_SEC,
+    pc.CRASH_COUNT,
+    pc.LAST_HEALTH_CHECK,
     COUNT(CASE WHEN c.COMMAND_STATUS = 'PENDING' THEN 1 END) as PENDING_COMMANDS
 FROM TB_M26_AGENT ai
-JOIN TB_M26_PROCESS_CONFIG pc ON ai.AGENT_ID = pc.AGENT_ID AND ai.DATA_END_STATUS = 'N' AND pc.DATA_END_STATUS = 'N'
-LEFT JOIN TB_M26_MODEL_PROCESS ast ON pc.PROCESS_ID = ast.PROCESS_ID AND ast.DATA_END_STATUS = 'N'
+JOIN TB_M26_MODEL_PROCESS pc ON ai.AGENT_ID = pc.AGENT_ID AND ai.DATA_END_STATUS = 'N' AND pc.DATA_END_STATUS = 'N'
 LEFT JOIN TB_M26_COMMAND c ON ai.AGENT_ID = c.AGENT_ID AND c.COMMAND_STATUS = 'PENDING' AND c.DATA_END_STATUS = 'N'
 GROUP BY ai.AGENT_ID, pc.PROCESS_ID;
 ```
@@ -690,17 +649,17 @@ if (process.state == RUNNING && !processExists(pid)) {
 
 ```java
 public interface ProcessHook {
-    void onBeforeStart(ProcessConfig config) throws HookException;
+    void onBeforeStart(ModelProcess config) throws HookException;
     void onAfterStart(Process process, ProcessStatus status);
     void onBeforeStop(ProcessStatus status);
     void onAfterStop(ProcessStatus status);
-    void onCrash(ProcessConfig config, Exception cause);
+    void onCrash(ModelProcess config, Exception cause);
 }
 
 // 구현 예시: LLM 모델 초기화 Hook
 public class LlmInitHook implements ProcessHook {
     @Override
-    public void onBeforeStart(ProcessConfig config) {
+    public void onBeforeStart(ModelProcess config) {
         // 모델 가중치 파일 다운로드/확인
         // 캐시 디렉토리 생성
         // 환경변수 설정

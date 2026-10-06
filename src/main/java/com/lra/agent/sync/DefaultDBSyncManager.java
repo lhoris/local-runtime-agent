@@ -1,6 +1,7 @@
 package com.lra.agent.sync;
 
 import com.lra.agent.health.HealthChecker;
+import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.parameter.ParameterManager;
 import com.lra.agent.process.ProcessManager;
 import com.lra.agent.process.ProcessStatus;
@@ -16,7 +17,6 @@ import com.lra.db.repository.ExecutionLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +42,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     private static final Logger log = LoggerFactory.getLogger(DefaultDBSyncManager.class);
     private static final int PREVIEW_LIMIT = 1000;
 
-    private final String agentId;
+    private final AgentIdentityResolver agentIdentityResolver;
     private final ProcessManager processManager;
     private final ModelProcessRepository modelProcessRepository;
     private final CommandRepository commandRepository;
@@ -51,12 +51,12 @@ public class DefaultDBSyncManager implements DBSyncManager {
     private HealthChecker healthChecker;
     private ParameterManager parameterManager;
 
-    public DefaultDBSyncManager(@Value("${agent.id}") String agentId,
+    public DefaultDBSyncManager(AgentIdentityResolver agentIdentityResolver,
                                 ProcessManager processManager,
                                 ModelProcessRepository modelProcessRepository,
                                 CommandRepository commandRepository,
                                 ExecutionLogRepository executionLogRepository) {
-        this.agentId = agentId;
+        this.agentIdentityResolver = agentIdentityResolver;
         this.processManager = processManager;
         this.modelProcessRepository = modelProcessRepository;
         this.commandRepository = commandRepository;
@@ -76,6 +76,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
     @Override
     @Transactional
     public void syncAgentStatus() {
+        String agentId = currentAgentIdOrNull();
+        if (agentId == null) {
+            return;
+        }
         List<ProcessStatus> statuses = processManager.getAllStatus();
         Instant now = Instant.now();
         for (ProcessStatus status : statuses) {
@@ -96,6 +100,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     @Override
     public void pollPendingCommands() {
+        String agentId = currentAgentIdOrNull();
+        if (agentId == null) {
+            return;
+        }
         List<Command> commands = commandRepository.findByAgentIdAndCommandStatus(
                 agentId, CommandStatus.PENDING.name());
 
@@ -127,7 +135,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     public void logExecution(ExecutionResult result) {
         ExecutionLog entry = new ExecutionLog();
         entry.setLogId(UUID.randomUUID().toString());
-        entry.setAgentId(agentId);
+        entry.setAgentId(currentAgentIdOrNull());
         entry.setProcessId(result.getModelId());
         entry.setCommandType(result.getCommandType() != null ? result.getCommandType().name() : null);
         entry.setExecutionStatus(result.getStatus() != null ? result.getStatus().name() : null);
@@ -207,9 +215,13 @@ public class DefaultDBSyncManager implements DBSyncManager {
             processes.add(entry);
         }
         Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("agentId", agentId);
+        snapshot.put("agentId", currentAgentIdOrNull());
         snapshot.put("processes", processes);
         return snapshot;
+    }
+
+    private String currentAgentIdOrNull() {
+        return agentIdentityResolver.resolveCurrentAgentId().orElse(null);
     }
 
     private String truncate(String value) {

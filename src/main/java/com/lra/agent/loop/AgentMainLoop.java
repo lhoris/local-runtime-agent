@@ -2,6 +2,7 @@ package com.lra.agent.loop;
 
 import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
+import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.process.ProcessManager;
 import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
@@ -17,7 +18,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +33,7 @@ public class AgentMainLoop {
 
     private static final Logger log = LoggerFactory.getLogger(AgentMainLoop.class);
 
-    private final String agentId;
+    private final ObjectProvider<AgentIdentityResolver> agentIdentityResolverProvider;
     private final ProcessManager processManager;
     private final ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider;
     private final StateManager stateManager;
@@ -41,14 +41,14 @@ public class AgentMainLoop {
     private final ObjectProvider<ProcessMonitor> processMonitorProvider;
     private final ObjectProvider<DBSyncManager> dbSyncManagerProvider;
 
-    public AgentMainLoop(@Value("${agent.id}") String agentId,
+    public AgentMainLoop(ObjectProvider<AgentIdentityResolver> agentIdentityResolverProvider,
                          ProcessManager processManager,
                          ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider,
                          StateManager stateManager,
                          ObjectProvider<HealthChecker> healthCheckerProvider,
                          ObjectProvider<ProcessMonitor> processMonitorProvider,
                          ObjectProvider<DBSyncManager> dbSyncManagerProvider) {
-        this.agentId = agentId;
+        this.agentIdentityResolverProvider = agentIdentityResolverProvider;
         this.processManager = processManager;
         this.modelProcessRepositoryProvider = modelProcessRepositoryProvider;
         this.stateManager = stateManager;
@@ -79,7 +79,15 @@ public class AgentMainLoop {
         if (modelProcessRepository == null) {
             return List.of();
         }
+        AgentIdentityResolver identityResolver = agentIdentityResolverProvider.getIfAvailable();
+        if (identityResolver == null) {
+            return List.of();
+        }
         try {
+            String agentId = identityResolver.resolveCurrentAgentId().orElse(null);
+            if (agentId == null) {
+                return List.of();
+            }
             List<ModelProcess> definitions = modelProcessRepository.findByAgentId(agentId);
             log.debug("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
             return definitions;

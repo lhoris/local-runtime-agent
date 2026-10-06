@@ -33,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
@@ -78,9 +77,6 @@ class SystemIntegrationTest {
     @Autowired
     DBSyncManager dbSyncManager;
 
-    @Value("${agent.id}")
-    String configuredAgentId;
-
     @BeforeEach
     void resetDatabase() {
         clearAll();
@@ -104,7 +100,7 @@ class SystemIntegrationTest {
 
     /**
      * S1: an agent that has registered itself and reported a RUNNING process
-     * (via agent_info / process_config / agent_status / heartbeat_log) is
+     * (via agent_info / model_process / agent_status / heartbeat_log) is
      * visible through the server's GET /api/v1/agents endpoint.
      */
     @Test
@@ -201,7 +197,7 @@ class SystemIntegrationTest {
     @Test
     @Disabled("Advanced crash detection test - requires runtime dependencies")
     void s4_crashIsDetectedAndProcessAutoRestarts() throws Exception {
-        String agentId = configuredAgentId;
+        String agentId = "agent-s4";
         String modelId = "proc-s4";
         String pythonExe = resolvePython();
         Assumptions.assumeTrue(isRunnable(pythonExe, "--version"),
