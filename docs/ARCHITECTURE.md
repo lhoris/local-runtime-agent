@@ -60,9 +60,9 @@ Windows/Linux PC                     Central Server              Shared Database
 │ Agent           │ ←polls every 30s→ │ Server      │ ←→ READ/WRITE │              │
 │                 │                 │              │            │              │
 │ ┌─────────────┐ │                 │ • Status     │            │ 테이블:       │
-│ │ Process Mgr │ │                 │   Aggregation│            │ • agent_info │
+│ │ Process Mgr │ │                 │   Aggregation│            │ • TB_M26_AGENT │
 │ │ Health Check│ │                 │ • Command    │            │ • commands   │
-│ │ Auto Restart│ │                 │   Dispatcher │            │ • agent_status
+│ │ Auto Restart│ │                 │   Dispatcher │            │ • TB_M26_MODEL_PROCESS
 │ └─────────────┘ │                 │ • Dashboard  │            │ • 등...       │
 │                 │                 │ • REST API   │            │              │
 │ ┌─────────────┐ │                 └──────────────┘            └──────────────┘
@@ -169,7 +169,7 @@ STOPPED → STARTING → RUNNING → STOPPING
 
 ```java
 public interface DBSyncManager {
-    void syncAgentStatus();  // Agent 상태를 DB에 기록 (agent_status + agent_info.last_heartbeat 포함)
+    void syncAgentStatus();  // Agent 상태를 DB에 기록 (TB_M26_MODEL_PROCESS + TB_M26_AGENT heartbeat 포함)
     void pollPendingCommands();  // DB의 미처리 명령 확인
     void logExecution(ExecutionResult result);  // 결과 기록
 }
@@ -570,20 +570,21 @@ DEGRADED
 
 ### 7.2 Agent 주기적 루프 (매 30초)
 
-1. **Monitor**: 모든 프로세스 상태 체크 (PID 확인, CPU/메모리)
-2. **HealthCheck**: 비정상 감지 (Crash, Zombie, Resource Exceed)
-3. **AutoRestart**: 필요시 자동 재시작
-4. **PollDB**: 미처리 명령 확인 (`command_status = 'PENDING'`)
-5. **ExecuteCommands**: 명령 순차 실행
-6. **SyncStatus**: 현재 상태를 `agent_status`에 기록하고, `agent_info.last_heartbeat` 업데이트
+1. **ResolveAgent**: 로컬 IPv4를 조회하고 `TB_M26_AGENT.IP_ADDRESS`로 현재 Agent를 찾는다.
+2. **LoadProcesses**: 현재 Agent의 `TB_M26_MODEL_PROCESS` 행을 조회한다.
+3. **CheckProcessSafety**: 조회한 각 프로세스의 PID와 실행 상태를 확인한다.
+4. **HealthCheck**: 실행 중인 프로세스의 health, crash, resource 상태를 확인한다.
+5. **AutoRestart**: `TB_M26_MODEL_PROCESS.AUTO_RESTART` 설정에 따라 장애 프로세스를 재시작한다.
+6. **PollAndExecuteCommands**: 현재 Agent의 `PENDING` 명령을 조회하고 실행한다.
+7. **SyncStatus**: 최신 프로세스 상태와 heartbeat를 `TB_M26_MODEL_PROCESS`에 기록한다.
 
 ### 7.3 명령 처리 흐름 (START 예시)
 
 ```
-① Central Server: INSERT INTO commands
+① Central Server: INSERT INTO TB_M26_COMMAND
    (agent_id, process_id, command_type='START', status='PENDING')
 
-② Agent Poll: SELECT * FROM commands 
+② Agent Poll: SELECT * FROM TB_M26_COMMAND 
    WHERE agent_id=? AND status='PENDING'
 
 ③ Agent Execute:
@@ -600,9 +601,9 @@ DEGRADED
    - 실패 → state = CRASHED or STOPPED
 
 ⑤ Agent Update:
-   - UPDATE agent_status SET state='RUNNING', pid=12345
-   - UPDATE commands SET status='COMPLETED', processed_at=NOW()
-   - INSERT INTO execution_log
+   - UPDATE TB_M26_MODEL_PROCESS SET PROCESS_STATE='RUNNING', PROCESS_PID=12345
+   - UPDATE TB_M26_COMMAND SET COMMAND_STATUS='COMPLETED', PROCESSED_AT=NOW()
+   - INSERT INTO TB_M26_EXECUTION_LOG
 ```
 
 ### 7.4 자동 재시작 로직
@@ -610,8 +611,8 @@ DEGRADED
 ```java
 // CrashDetector (각 폴링 사이클마다)
 if (process.state == RUNNING && !processExists(pid)) {
-    agent_status.state = CRASHED
-    agent_status.crash_count++
+    model_process.PROCESS_STATE = CRASHED
+    model_process.CRASH_COUNT++
 
     if (config.auto_restart == true &&
         crash_count < config.max_restart_attempts) {
@@ -619,7 +620,7 @@ if (process.state == RUNNING && !processExists(pid)) {
         sleep(config.restart_delay_sec)
         processManager.startProcess(process_id)
     } else {
-        agent_status.state = STOPPED
+        model_process.PROCESS_STATE = STOPPED
         log.error("Process crashed, max attempts reached")
     }
 }
@@ -842,22 +843,18 @@ systemctl status local-runtime-agent.service
 
 ```yaml
 agent:
-  id: "agent-${HOSTNAME}"
-  polling_interval_sec: 30
-  health_check_interval_sec: 30
+  polling-interval-sec: 30
+  health-check-interval-sec: 30
 
-database:
-  url: jdbc:mysql://central-db:3306/agent_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
-  username: ${DB_USER}
-  password: ${DB_PASSWORD}
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:agent_db}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 
-processes:
-  - process_id: model-llm-1
-    executable: /models/llm/inference.py
-    working_dir: /models/llm
-    auto_restart: true
-    max_restart_attempts: 3
-    timeout_sec: 600
+# Agent identity and managed processes are registered in MariaDB:
+# TB_M26_AGENT.IP_ADDRESS and TB_M26_MODEL_PROCESS.
+# See docs/database/seed-local-agent.sql.
 
 logging:
   level: INFO
@@ -886,7 +883,7 @@ logging:
 if (processExists(pid) && !processResponding(pid)) {
     // Zombie 프로세스 감지
     forcefullyTerminate(pid);
-    agent_status.state = CRASHED;
+    model_process.PROCESS_STATE = CRASHED;
 }
 ```
 

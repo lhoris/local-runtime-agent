@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.ModelProcess;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -104,6 +105,18 @@ class ProcessManagerTest {
     @Test
     void getStatus_unknownModel_returnsNull() {
         assertThat(manager.getStatus("nope")).isNull();
+    }
+
+    @Test
+    void reconcileDefinitions_stopsAndRemovesProcessMissingFromDatabase() throws Exception {
+        Process proc = aliveProcess(1234L);
+        when(launcher.launch(any(), any(), any())).thenReturn(proc);
+        manager.startProcess("m1", config(true, 3));
+
+        manager.reconcileDefinitions(List.of());
+
+        verify(proc).destroy();
+        assertThat(manager.getStatus("m1")).isNull();
     }
 
     @Test

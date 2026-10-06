@@ -11,6 +11,9 @@ public interface ProcessManager {
     /** Check one database-defined process against the local runtime state. */
     ProcessStatus checkStatus(ModelProcess definition);
 
+    /** Remove local process state that is no longer defined in the database. */
+    void reconcileDefinitions(List<ModelProcess> definitions);
+
     /** Launch the process for {@code modelId} using {@code definition}. */
     void startProcess(String modelId, ModelProcess definition);
 

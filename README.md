@@ -20,7 +20,7 @@ Windows Service / Linux systemd 로 상시 구동하도록 설계되었다.
 | 언어 | Java 21 (LTS) |
 | 프레임워크 | Spring Boot 3.4.1 |
 | 빌드 도구 | Maven Wrapper (`./mvnw`, 3.9+) |
-| DB 마이그레이션 | Flyway |
+| DB 스키마 관리 | 배포자가 수동 SQL로 관리 |
 | 데이터베이스 | MariaDB 11.8 (운영) / H2 (테스트) |
 
 ## 패키지 구조
@@ -31,7 +31,7 @@ com.lra
 ├── agent    # 프로세스 관리, 상태 머신, 헬스체크, DB 동기화, 파라미터, 메인 루프
 ├── server   # 중앙 서버 REST API
 ├── common   # 공용 DTO/enum/상수/예외/유틸
-└── db       # JPA 엔티티 및 리포지토리 (스키마는 Flyway로 관리)
+└── db       # JPA 엔티티 및 리포지토리
 ```
 
 ## 빌드 및 실행
@@ -62,7 +62,7 @@ Spring 프로필별 설정 파일을 제공한다. 프로필 미지정 시 `appl
 | `application.yml` | (공통) | 기본값, 환경변수 바인딩 |
 | `application-dev.yml` | `dev` | 로컬 MariaDB 11.8, SQL 로깅, DEBUG |
 | `application-prod.yml` | `prod` | 환경변수 필수, TLS 옵션, INFO |
-| `application-test.yml` | `test` | H2 인메모리, Flyway 자동 마이그레이션 |
+| `application-test.yml` | `test` | H2 인메모리, Hibernate 테스트 스키마 |
 
 ### 프로필 활성화
 

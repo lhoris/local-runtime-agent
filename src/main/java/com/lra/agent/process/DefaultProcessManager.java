@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -56,6 +57,22 @@ public class DefaultProcessManager implements ProcessManager {
         }
         refresh(mp);
         return toStatus(mp);
+    }
+
+    @Override
+    public void reconcileDefinitions(List<ModelProcess> definitions) {
+        Set<String> configuredIds = definitions.stream()
+            .map(ModelProcess::getProcessId)
+            .filter(id -> id != null && !id.isBlank())
+            .collect(java.util.stream.Collectors.toSet());
+
+        for (String modelId : new ArrayList<>(processes.keySet())) {
+            if (!configuredIds.contains(modelId)) {
+                log.info("Removing process {} because it is no longer configured for this agent", modelId);
+                stopProcess(modelId, StopStrategy.GRACEFUL);
+                processes.remove(modelId);
+            }
+        }
     }
 
     @Override

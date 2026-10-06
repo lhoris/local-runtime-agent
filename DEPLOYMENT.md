@@ -111,7 +111,7 @@ sudo scripts/linux/uninstall-service.sh --purge    # also removes /opt, /etc, us
 | ------- | ------------------ |
 | `status=203/EXEC` | `java` not at `/usr/bin/java`. Symlink it or edit `ExecStart`. |
 | Fails immediately, log shows datasource error | `lra-agent.env` missing DB creds or `SPRING_PROFILES_ACTIVE` not `prod`. Verify MariaDB host/port/credentials. |
-| `Flyway ... validate failed` | Schema drift; check the MariaDB instance matches the migrations in `db/migration`. |
+| `Schema or column missing` | Run `docs/database/verify-schema.sql`; apply the approved MariaDB schema manually before starting the Agent. |
 | No logs in `/opt/lra-agent/logs` | Check journal instead (`journalctl -u local-runtime-agent`); file logging depends on `LOG_FILE`. |
 
 ---

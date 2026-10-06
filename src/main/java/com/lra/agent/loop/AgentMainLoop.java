@@ -33,28 +33,28 @@ public class AgentMainLoop {
 
     private static final Logger log = LoggerFactory.getLogger(AgentMainLoop.class);
 
-    private final ObjectProvider<AgentIdentityResolver> agentIdentityResolverProvider;
+    private final AgentIdentityResolver agentIdentityResolver;
     private final ProcessManager processManager;
-    private final ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider;
+    private final ModelProcessRepository modelProcessRepository;
     private final StateManager stateManager;
     private final ObjectProvider<HealthChecker> healthCheckerProvider;
     private final ObjectProvider<ProcessMonitor> processMonitorProvider;
-    private final ObjectProvider<DBSyncManager> dbSyncManagerProvider;
+    private final DBSyncManager dbSyncManager;
 
-    public AgentMainLoop(ObjectProvider<AgentIdentityResolver> agentIdentityResolverProvider,
+    public AgentMainLoop(AgentIdentityResolver agentIdentityResolver,
                          ProcessManager processManager,
-                         ObjectProvider<ModelProcessRepository> modelProcessRepositoryProvider,
+                         ModelProcessRepository modelProcessRepository,
                          StateManager stateManager,
                          ObjectProvider<HealthChecker> healthCheckerProvider,
                          ObjectProvider<ProcessMonitor> processMonitorProvider,
-                         ObjectProvider<DBSyncManager> dbSyncManagerProvider) {
-        this.agentIdentityResolverProvider = agentIdentityResolverProvider;
+                         DBSyncManager dbSyncManager) {
+        this.agentIdentityResolver = agentIdentityResolver;
         this.processManager = processManager;
-        this.modelProcessRepositoryProvider = modelProcessRepositoryProvider;
+        this.modelProcessRepository = modelProcessRepository;
         this.stateManager = stateManager;
         this.healthCheckerProvider = healthCheckerProvider;
         this.processMonitorProvider = processMonitorProvider;
-        this.dbSyncManagerProvider = dbSyncManagerProvider;
+        this.dbSyncManager = dbSyncManager;
     }
 
     @Scheduled(fixedRateString = "${agent.polling-interval-sec:30}000")
@@ -75,20 +75,13 @@ public class AgentMainLoop {
 
     /** Step 1: read the processes this agent is responsible for supervising. */
     private List<ModelProcess> loadProcessDefinitionsFromDb() {
-        ModelProcessRepository modelProcessRepository = modelProcessRepositoryProvider.getIfAvailable();
-        if (modelProcessRepository == null) {
-            return List.of();
-        }
-        AgentIdentityResolver identityResolver = agentIdentityResolverProvider.getIfAvailable();
-        if (identityResolver == null) {
-            return List.of();
-        }
         try {
-            String agentId = identityResolver.resolveCurrentAgentId().orElse(null);
+            String agentId = agentIdentityResolver.resolveCurrentAgentId().orElse(null);
             if (agentId == null) {
                 return List.of();
             }
             List<ModelProcess> definitions = modelProcessRepository.findByAgentId(agentId);
+            processManager.reconcileDefinitions(definitions);
             log.debug("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
             return definitions;
         } catch (RuntimeException ex) {
@@ -166,10 +159,6 @@ public class AgentMainLoop {
 
     /** Step 6: fetch and execute pending commands. */
     private void pollPendingCommands() {
-        DBSyncManager dbSyncManager = dbSyncManagerProvider.getIfAvailable();
-        if (dbSyncManager == null) {
-            return;
-        }
         try {
             dbSyncManager.pollPendingCommands();
         } catch (RuntimeException ex) {
@@ -179,10 +168,6 @@ public class AgentMainLoop {
 
     /** Step 7: publish process status to the central DB, including heartbeat. */
     private void publishCurrentStatus() {
-        DBSyncManager dbSyncManager = dbSyncManagerProvider.getIfAvailable();
-        if (dbSyncManager == null) {
-            return;
-        }
         try {
             dbSyncManager.syncAgentStatus();
         } catch (RuntimeException ex) {

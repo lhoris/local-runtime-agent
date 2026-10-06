@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 /**
  * Point-in-time runtime status of a managed process (ARCHITECTURE.md §4.1).
- * A plain snapshot; persistence to agent_status is the DBSyncManager's concern.
+ * A plain snapshot; persistence to TB_M26_MODEL_PROCESS is the DBSyncManager's concern.
  */
 public class ProcessStatus {
 

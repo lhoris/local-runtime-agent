@@ -1,9 +1,12 @@
 package com.lra.agent.loop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.process.DefaultProcessManager;
 import com.lra.agent.process.ProcessBuilderLauncher;
 import com.lra.agent.state.DefaultStateManager;
+import com.lra.agent.sync.DBSyncManager;
+import com.lra.db.repository.ModelProcessRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,16 +17,14 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 /**
  * Boots the agent loop with its real collaborators to verify Spring wiring and
  * that a full cycle runs (ARCHITECTURE.md §7.2).
  *
- * <p>Currently wires the components that exist: {@link AgentMainLoop},
- * {@link AgentLoopScheduler}, {@link DefaultStateManager},
- * {@link DefaultProcessManager} + {@link ProcessBuilderLauncher}. The optional
- * {@code HealthChecker} (#6) and {@code DBSyncManager} (#7) are absent, so those
- * steps are skipped via {@code ObjectProvider}.
+ * <p>Wires the required database collaborators explicitly and leaves the
+ * optional health and restart collaborators absent.
  *
  * <p>TODO(#6/#7/#8): add the real HealthChecker / DBSyncManager / ParameterManager
  * beans to {@link TestBeans} and assert those steps execute end-to-end.
@@ -73,6 +74,21 @@ class AgentMainLoopIntegrationTest {
         @Bean
         ObjectMapper objectMapper() {
             return new ObjectMapper();
+        }
+
+        @Bean
+        AgentIdentityResolver agentIdentityResolver() {
+            return mock(AgentIdentityResolver.class);
+        }
+
+        @Bean
+        ModelProcessRepository modelProcessRepository() {
+            return mock(ModelProcessRepository.class);
+        }
+
+        @Bean
+        DBSyncManager dbSyncManager() {
+            return mock(DBSyncManager.class);
         }
     }
 }

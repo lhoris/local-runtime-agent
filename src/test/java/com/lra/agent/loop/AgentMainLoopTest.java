@@ -50,8 +50,8 @@ class AgentMainLoopTest {
         processMonitor = mock(ProcessMonitor.class);
         dbSyncManager = mock(DBSyncManager.class);
         when(agentIdentityResolver.resolveCurrentAgentId()).thenReturn(java.util.Optional.of("agent-test"));
-        loop = new AgentMainLoop(provider(agentIdentityResolver), processManager, provider(modelProcessRepository), stateManager,
-                provider(healthChecker), provider(processMonitor), provider(dbSyncManager));
+        loop = new AgentMainLoop(agentIdentityResolver, processManager, modelProcessRepository, stateManager,
+                provider(healthChecker), provider(processMonitor), dbSyncManager);
     }
 
     @Test
@@ -137,8 +137,8 @@ class AgentMainLoopTest {
 
     @Test
     void missingOptionalComponentsAreSkipped() {
-        AgentMainLoop bareLoop = new AgentMainLoop(emptyProvider(), processManager, emptyProvider(), stateManager,
-                emptyProvider(), emptyProvider(), emptyProvider());
+        AgentMainLoop bareLoop = new AgentMainLoop(agentIdentityResolver, processManager, modelProcessRepository, stateManager,
+                emptyProvider(), emptyProvider(), dbSyncManager);
 
         bareLoop.agentLoop();
 
