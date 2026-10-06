@@ -9,6 +9,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 3. Edit and run `seed-local-agent.sql` when you want to preconfigure a process row.
 4. Start the Agent. It automatically creates the `TB_M26_AGENT` row from the local hostname and IP.
 5. Confirm that the process row uses the created `AGENT_ID`.
+6. Run `smoke-test.sql` to verify Agent registration, process assignment, and heartbeat updates.
 
 `TB_M26_MODEL_PROCESS` contains both the process definition and the latest runtime status. The Agent does not maintain a separate monitoring-target registration table.
 
