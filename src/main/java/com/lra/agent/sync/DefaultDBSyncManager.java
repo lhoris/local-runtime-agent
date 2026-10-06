@@ -221,7 +221,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     }
 
     private String currentAgentIdOrNull() {
-        return agentIdentityResolver.resolveCurrentAgentId().orElse(null);
+        return agentIdentityResolver.resolveOrRegisterCurrentAgentId().orElse(null);
     }
 
     private String truncate(String value) {

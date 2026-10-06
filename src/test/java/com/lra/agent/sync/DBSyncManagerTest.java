@@ -57,7 +57,7 @@ class DBSyncManagerTest {
                 modelProcessRepository,
                 commandRepository,
                 executionLogRepository);
-        when(agentIdentityResolver.resolveCurrentAgentId()).thenReturn(Optional.of(AGENT_ID));
+        when(agentIdentityResolver.resolveOrRegisterCurrentAgentId()).thenReturn(Optional.of(AGENT_ID));
     }
 
     private ProcessStatus runningStatus(String modelId) {

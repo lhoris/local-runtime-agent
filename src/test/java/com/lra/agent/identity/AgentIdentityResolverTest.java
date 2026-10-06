@@ -27,19 +27,26 @@ class AgentIdentityResolverTest {
 
         AgentIdentityResolver resolver = new AgentIdentityResolver(localIpResolver, agentRepository);
 
-        assertEquals(Optional.of("agent-2"), resolver.resolveCurrentAgentId());
+        assertEquals(Optional.of("agent-2"), resolver.resolveOrRegisterCurrentAgentId());
         verify(agentRepository).findByIpAddress("10.0.0.12");
     }
 
     @Test
-    void returnsEmptyWhenNoLocalIpIsRegistered() {
+    void registersAgentWhenNoMatchingRowExists() {
         LocalIpResolver localIpResolver = mock(LocalIpResolver.class);
         AgentRepository agentRepository = mock(AgentRepository.class);
         when(localIpResolver.resolveAll()).thenReturn(List.of("10.0.0.12"));
         when(agentRepository.findByIpAddress("10.0.0.12")).thenReturn(List.of());
+        when(localIpResolver.resolveHostname()).thenReturn(Optional.of("test-host"));
+        when(agentRepository.findByHostname("test-host")).thenReturn(List.of());
+        Agent saved = new Agent();
+        saved.setAgentId("agent-test-host");
+        saved.setIpAddress("10.0.0.12");
+        when(agentRepository.save(org.mockito.ArgumentMatchers.any(Agent.class))).thenReturn(saved);
 
         AgentIdentityResolver resolver = new AgentIdentityResolver(localIpResolver, agentRepository);
 
-        assertTrue(resolver.resolveCurrentAgentId().isEmpty());
+        assertEquals(Optional.of("agent-test-host"), resolver.resolveOrRegisterCurrentAgentId());
+        verify(agentRepository).save(org.mockito.ArgumentMatchers.any(Agent.class));
     }
 }

@@ -49,7 +49,7 @@ class AgentMainLoopTest {
         healthChecker = mock(HealthChecker.class);
         processMonitor = mock(ProcessMonitor.class);
         dbSyncManager = mock(DBSyncManager.class);
-        when(agentIdentityResolver.resolveCurrentAgentId()).thenReturn(java.util.Optional.of("agent-test"));
+        when(agentIdentityResolver.resolveOrRegisterCurrentAgentId()).thenReturn(java.util.Optional.of("agent-test"));
         loop = new AgentMainLoop(agentIdentityResolver, processManager, modelProcessRepository, stateManager,
                 provider(healthChecker), provider(processMonitor), dbSyncManager);
     }
@@ -143,6 +143,17 @@ class AgentMainLoopTest {
         bareLoop.agentLoop();
 
         verify(processManager, never()).checkStatus(any());
+    }
+
+    @Test
+    void missingAgentSkipsTheWholeCycle() {
+        when(agentIdentityResolver.resolveOrRegisterCurrentAgentId()).thenReturn(java.util.Optional.empty());
+
+        loop.agentLoop();
+
+        verify(modelProcessRepository, never()).findByAgentId(any());
+        verify(processManager, never()).checkStatus(any());
+        verify(dbSyncManager, never()).syncAgentStatus();
     }
 
     private static ProcessStatus running(String modelId) {

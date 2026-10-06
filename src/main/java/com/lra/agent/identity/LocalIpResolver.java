@@ -57,4 +57,14 @@ public class LocalIpResolver {
         }
         return addresses.stream().distinct().toList();
     }
+
+    public Optional<String> resolveHostname() {
+        try {
+            return Optional.ofNullable(InetAddress.getLocalHost().getHostName())
+                .filter(hostname -> !hostname.isBlank());
+        } catch (Exception ex) {
+            log.warn("Failed to resolve local hostname", ex);
+            return Optional.empty();
+        }
+    }
 }

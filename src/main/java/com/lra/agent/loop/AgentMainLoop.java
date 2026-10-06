@@ -15,6 +15,7 @@ import com.lra.db.entity.ModelProcess;
 import com.lra.db.repository.ModelProcessRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -62,7 +63,20 @@ public class AgentMainLoop {
         long startedAt = System.currentTimeMillis();
         log.info("Agent loop cycle started");
 
-        List<ModelProcess> processes = loadProcessDefinitionsFromDb();
+        Optional<String> agentId = agentIdentityResolver.resolveOrRegisterCurrentAgentId();
+        if (agentId.isEmpty()) {
+            log.warn("Agent loop skipped: local Agent could not be resolved or registered");
+            return;
+        }
+
+        Optional<List<ModelProcess>> loadedProcesses = loadProcessDefinitionsFromDb(agentId.get());
+        if (loadedProcesses.isEmpty()) {
+            log.warn("Agent loop skipped: model process query failed for agent {}", agentId.get());
+            return;
+        }
+
+        List<ModelProcess> processes = loadedProcesses.get();
+        processManager.reconcileDefinitions(processes);
         List<ProcessStatus> statuses = checkManagedProcessSafety(processes);
         healthCheckRunningProcesses(statuses);
         detectUnsafeProcesses(statuses);
@@ -74,19 +88,14 @@ public class AgentMainLoop {
     }
 
     /** Step 1: read the processes this agent is responsible for supervising. */
-    private List<ModelProcess> loadProcessDefinitionsFromDb() {
+    private Optional<List<ModelProcess>> loadProcessDefinitionsFromDb(String agentId) {
         try {
-            String agentId = agentIdentityResolver.resolveCurrentAgentId().orElse(null);
-            if (agentId == null) {
-                return List.of();
-            }
             List<ModelProcess> definitions = modelProcessRepository.findByAgentId(agentId);
-            processManager.reconcileDefinitions(definitions);
             log.debug("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
-            return definitions;
+            return Optional.of(definitions);
         } catch (RuntimeException ex) {
             log.warn("Loading model process definitions failed", ex);
-            return List.of();
+            return Optional.empty();
         }
     }
 

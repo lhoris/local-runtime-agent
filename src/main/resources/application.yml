@@ -22,6 +22,7 @@ server:
     context-path: /
 
 agent:
+  auto-register: ${AGENT_AUTO_REGISTER:true}
   polling-interval-sec: ${AGENT_POLLING_INTERVAL_SEC:30}
   health-check-interval-sec: ${AGENT_HEALTH_CHECK_INTERVAL_SEC:30}
 

@@ -70,12 +70,6 @@ LEFT JOIN information_schema.COLUMNS actual
    AND actual.COLUMN_NAME = required_columns.COLUMN_NAME
 ORDER BY required_columns.TABLE_NAME, required_columns.COLUMN_NAME;
 
-SELECT TABLE_NAME AS LEGACY_TABLE,
-       'REMOVE_OR_ARCHIVE_BEFORE_START' AS ACTION_REQUIRED
-FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME = 'TB_M26_PROCESS_CONFIG';
-
 -- One IP must identify one Agent. Resolve duplicates before starting an Agent.
 SELECT IP_ADDRESS,
        COUNT(*) AS AGENT_COUNT,
