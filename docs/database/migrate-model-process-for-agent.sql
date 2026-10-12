@@ -1,11 +1,22 @@
--- Manual upgrade for an existing vision-monitor TB_M26_MODEL_PROCESS table.
--- Run after taking a backup. This script intentionally does not drop or rename
--- existing business columns.
+-- Safe ALTER migration for an existing vision-monitor TB_M26_MODEL_PROCESS table.
+--
+-- This script preserves existing rows and existing business columns.
+-- It only adds missing Agent columns, fills missing identifiers, and adds an
+-- index. It does not DROP, DELETE, or replace any existing table.
+--
+-- Run docs/database/migrate-audit-columns.sql separately when the shared audit
+-- columns are also required. Take a database backup before any DDL change.
+
+-- 0. Preflight: understand the current table before changing it.
+SHOW CREATE TABLE TB_M26_MODEL_PROCESS;
+SELECT COUNT(*) AS EXISTING_PROCESS_COUNT
+FROM TB_M26_MODEL_PROCESS;
 
 -- 1. Add the Agent columns that are not part of the original vision-monitor table.
 ALTER TABLE TB_M26_MODEL_PROCESS
-    ADD COLUMN IF NOT EXISTS PROCESS_ID VARCHAR(64) NULL COMMENT 'Managed process unique identifier',
-    ADD COLUMN IF NOT EXISTS AGENT_ID VARCHAR(64) NULL COMMENT 'Agent responsible for this process',
+    ADD COLUMN IF NOT EXISTS PROCESS_ID VARCHAR(64) NULL COMMENT 'Managed process unique identifier' AFTER DESCRIPTION,
+    ADD COLUMN IF NOT EXISTS AGENT_ID VARCHAR(64) NULL COMMENT 'Agent responsible for this process' AFTER PROCESS_ID,
+    ADD COLUMN IF NOT EXISTS PYTHON_PROJECT_PATH VARCHAR(512) NULL COMMENT 'Python project directory containing run.bat, stop.bat, and restart.bat',
     ADD COLUMN IF NOT EXISTS AUTO_RESTART BOOLEAN DEFAULT TRUE COMMENT 'Whether crashed processes are restarted automatically',
     ADD COLUMN IF NOT EXISTS MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT 'Maximum automatic restart attempts',
     ADD COLUMN IF NOT EXISTS RESTART_DELAY_SEC INT DEFAULT 10 COMMENT 'Delay before automatic restart in seconds',
@@ -26,6 +37,11 @@ UPDATE TB_M26_MODEL_PROCESS
 SET PROCESS_ID = UUID()
 WHERE PROCESS_ID IS NULL OR PROCESS_ID = '';
 
+SELECT PROCESS_ID, COUNT(*) AS ROW_COUNT
+FROM TB_M26_MODEL_PROCESS
+GROUP BY PROCESS_ID
+HAVING COUNT(*) > 1;
+
 -- 3. Resolve Agent ownership from the existing SERVER_IP column.
 UPDATE TB_M26_MODEL_PROCESS p
 JOIN TB_M26_AGENT a ON a.IP_ADDRESS = p.SERVER_IP
@@ -38,6 +54,7 @@ FROM TB_M26_MODEL_PROCESS
 WHERE AGENT_ID IS NULL OR AGENT_ID = '';
 
 -- 5. After the previous query returns no rows, enforce the Agent contract.
+-- Execute this block only after every existing row has an AGENT_ID.
 ALTER TABLE TB_M26_MODEL_PROCESS
     MODIFY COLUMN PROCESS_ID VARCHAR(64) NOT NULL,
     MODIFY COLUMN AGENT_ID VARCHAR(64) NOT NULL;

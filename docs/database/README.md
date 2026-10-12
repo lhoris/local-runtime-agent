@@ -24,5 +24,5 @@ Flyway is intentionally not used by this application. Database changes are appli
 
 All shared tables use the 14-column audit contract: `CREATED_*`, `LAST_UPDATED_*`, and `DATA_END_*`.
 
-For an existing vision-monitor database, run `migrate-model-process-for-agent.sql` and then `migrate-audit-columns.sql` after taking a backup. Do not use the fresh `CREATE TABLE` definition to replace the existing tables.
+For an existing vision-monitor database, run `migrate-model-process-for-agent.sql` and then `migrate-audit-columns.sql` after taking a backup. This is an ALTER-only migration: it preserves existing rows and business columns. Do not use the fresh `CREATE TABLE` definition to replace the existing tables, and do not run `simplify-model-process-columns.sql` unless the removed legacy columns have been verified to be unused by vision-monitor.
 - `AUTO_RESTART` and `HEALTH_CHECK_ENABLED` should be stored as boolean-compatible values (`1`/`0`) for MariaDB.
