@@ -81,12 +81,12 @@ class DBSyncManagerTest {
 
     @Test
     void syncAgentStatusPersistsEachProcess() {
-        when(processManager.getAllStatus()).thenReturn(List.of(runningStatus("model-1")));
+        when(processManager.getAllStatus()).thenReturn(List.of(runningStatus("1")));
 
         dbSyncManager.syncAgentStatus();
 
         verify(modelProcessRepository).save(argThat(record ->
-                record.getProcessId().equals("model-1")
+                record.getProcessId().equals("1")
                         && record.getAgentId().equals(AGENT_ID)
                         && record.getState().equals("RUNNING")
                         && record.getPid() == 1234
@@ -95,15 +95,15 @@ class DBSyncManagerTest {
 
     @Test
     void pollPendingCommandsExecutesAndMarksCompleted() {
-        Command cmd = command("cmd-1", "START", "model-1");
+        Command cmd = command("cmd-1", "START", "1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
-        when(modelProcessRepository.findById("model-1"))
+        when(modelProcessRepository.findById(1L))
                 .thenReturn(Optional.of(new ModelProcess()));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
+        verify(processManager).startProcess(eq("1"), any(ModelProcess.class));
         verify(commandRepository).save(argThat(c -> c.getCommandStatus().equals("COMPLETED")
                 && c.getProcessedAt() != null));
         verify(executionLogRepository).save(argThat((ExecutionLog logEntry) ->
@@ -113,27 +113,27 @@ class DBSyncManagerTest {
 
     @Test
     void attachCommandAttachesExistingProcess() {
-        Command cmd = command("cmd-attach", "ATTACH", "model-1");
+        Command cmd = command("cmd-attach", "ATTACH", "1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
-        when(modelProcessRepository.findById("model-1"))
+        when(modelProcessRepository.findById(1L))
                 .thenReturn(Optional.of(new ModelProcess()));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).attachExistingProcess(eq("model-1"), any(ModelProcess.class));
+        verify(processManager).attachExistingProcess(eq("1"), any(ModelProcess.class));
         verify(commandRepository).save(argThat(c -> c.getCommandStatus().equals("COMPLETED")));
     }
 
     @Test
     void pollPendingCommandsMarksFailedWhenExecutionThrows() {
-        Command cmd = command("cmd-1", "START", "model-1");
+        Command cmd = command("cmd-1", "START", "1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
-        when(modelProcessRepository.findById("model-1"))
+        when(modelProcessRepository.findById(1L))
                 .thenReturn(Optional.of(new ModelProcess()));
         doThrow(new RuntimeException("boom"))
-                .when(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
+                .when(processManager).startProcess(eq("1"), any(ModelProcess.class));
 
         dbSyncManager.pollPendingCommands();
 
@@ -145,18 +145,18 @@ class DBSyncManagerTest {
 
     @Test
     void oneCommandFailureDoesNotBlockOthers() {
-        Command failing = command("cmd-1", "START", "model-1");
-        Command succeeding = command("cmd-2", "STOP", "model-2");
+        Command failing = command("cmd-1", "START", "1");
+        Command succeeding = command("cmd-2", "STOP", "2");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(failing, succeeding));
-        when(modelProcessRepository.findById("model-1"))
+        when(modelProcessRepository.findById(1L))
                 .thenReturn(Optional.of(new ModelProcess()));
         doThrow(new RuntimeException("boom"))
-                .when(processManager).startProcess(eq("model-1"), any(ModelProcess.class));
+                .when(processManager).startProcess(eq("1"), any(ModelProcess.class));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).stopProcess("model-2", StopStrategy.GRACEFUL);
+        verify(processManager).stopProcess("2", StopStrategy.GRACEFUL);
         verify(commandRepository).save(argThat(c -> c.getCommandId().equals("cmd-2")
                 && c.getCommandStatus().equals("COMPLETED")));
     }

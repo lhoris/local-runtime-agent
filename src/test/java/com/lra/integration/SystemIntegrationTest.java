@@ -107,7 +107,7 @@ class SystemIntegrationTest {
     @Test
     void s1_agentStatusIsVisibleToServer() throws Exception {
         agentRepository.save(newAgent("agent-1", "ml-server-01"));
-        ModelProcess proc1 = newProcess("proc-1", "agent-1", "INFERENCE");
+        ModelProcess proc1 = newProcess("1", "agent-1", "INFERENCE");
         proc1.setState("RUNNING");
         proc1.setHealthStatus("HEALTHY");
         proc1.setPid(12345);
@@ -122,7 +122,7 @@ class SystemIntegrationTest {
         assertThat(agent.get("status").asText()).isEqualTo("HEALTHY");
 
         JsonNode process = agent.get("processes").get(0);
-        assertThat(process.get("process_id").asText()).isEqualTo("proc-1");
+        assertThat(process.get("process_id").asText()).isEqualTo("1");
         assertThat(process.get("state").asText()).isEqualTo("RUNNING");
         assertThat(process.get("pid").asInt()).isEqualTo(12345);
     }
@@ -137,11 +137,11 @@ class SystemIntegrationTest {
     @Test
     void s2_commandIsPublishedAndPollableByAgent() throws Exception {
         agentRepository.save(newAgent("agent-2", "ml-server-02"));
-        modelProcessRepository.save(newProcess("proc-2", "agent-2", "INFERENCE"));
+        modelProcessRepository.save(newProcess("2", "agent-2", "INFERENCE"));
 
         Map<String, Object> body = Map.of(
                 "agent_id", "agent-2",
-                "process_id", "proc-2",
+                "process_id", "2",
                 "command_type", "START",
                 "parameters", Map.of());
         ResponseEntity<String> response = rest.postForEntity("/api/v1/commands", body, String.class);
@@ -153,7 +153,7 @@ class SystemIntegrationTest {
 
         List<Command> pending = commandRepository.findByAgentIdAndCommandStatus("agent-2", "PENDING");
         assertThat(pending).hasSize(1);
-        assertThat(pending.get(0).getProcessId()).isEqualTo("proc-2");
+        assertThat(pending.get(0).getProcessId()).isEqualTo("2");
     }
 
     /**
@@ -167,13 +167,13 @@ class SystemIntegrationTest {
     @Disabled("Parameter update feature - pending enterprise implementation")
     void s3_parameterUpdateVersionsAndQueuesRestart() throws Exception {
         agentRepository.save(newAgent("agent-3", "ml-server-03"));
-        modelProcessRepository.save(newProcess("proc-3", "agent-3", "INFERENCE"));
+        modelProcessRepository.save(newProcess("3", "agent-3", "INFERENCE"));
 
-        postParameter("proc-3", "temperature", "0.7", false);
-        postParameter("proc-3", "temperature", "0.9", true);
+        postParameter("3", "temperature", "0.7", false);
+        postParameter("3", "temperature", "0.9", true);
 
         List<ModelParameter> active =
-                modelParameterRepository.findByProcessIdAndIsActive("proc-3", true);
+                modelParameterRepository.findByProcessIdAndIsActive("3", true);
         assertThat(active).hasSize(1);
         assertThat(active.get(0).getParamValue()).isEqualTo("0.9");
         assertThat(active.get(0).getVersion()).isEqualTo(2);
@@ -184,7 +184,7 @@ class SystemIntegrationTest {
         List<Command> restarts = commandRepository.findByAgentIdAndCommandStatus("agent-3", "PENDING");
         assertThat(restarts).as("apply_immediately queues one RESTART").hasSize(1);
         assertThat(restarts.get(0).getCommandType()).isEqualTo("RESTART");
-        assertThat(restarts.get(0).getProcessId()).isEqualTo("proc-3");
+        assertThat(restarts.get(0).getProcessId()).isEqualTo("3");
     }
 
     /**
@@ -199,7 +199,7 @@ class SystemIntegrationTest {
     @Disabled("Advanced crash detection test - requires runtime dependencies")
     void s4_crashIsDetectedAndProcessAutoRestarts() throws Exception {
         String agentId = "agent-s4";
-        String modelId = "proc-s4";
+        String modelId = "4";
         String pythonExe = resolvePython();
         Assumptions.assumeTrue(isRunnable(pythonExe, "--version"),
                 "Python runtime not available; skipping S4");
@@ -284,7 +284,7 @@ class SystemIntegrationTest {
     }
 
     private String agentState(String agentId, String modelId) {
-        return modelProcessRepository.findById(modelId)
+        return modelProcessRepository.findById(Long.valueOf(modelId))
                 .map(ModelProcess::getState)
                 .orElse(null);
     }

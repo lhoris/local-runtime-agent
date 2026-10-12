@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
@@ -17,11 +18,14 @@ import java.util.Objects;
 @Table(name = "TB_M26_MODEL_PROCESS")
 public class ModelProcess {
 
-    /** Application-assigned identifier (not DB-generated). */
+    /** Shared vision-monitor database identifier. */
     @Id
-    @NotBlank
-    @Column(name = "PROCESS_ID", length = 64)
-    private String processId;
+    @Column(name = "MODEL_PROCESS_ID")
+    private Long modelProcessId;
+
+    /** Compatibility value used by the local process manager and API contract. */
+    @Transient
+    private String legacyProcessId;
 
     @NotBlank
     @Column(name = "AGENT_ID", length = 64, nullable = false)
@@ -76,12 +80,34 @@ public class ModelProcess {
     @Column(name = "ERROR_MESSAGE", columnDefinition = "text")
     private String errorMessage;
 
+    public Long getModelProcessId() {
+        return modelProcessId;
+    }
+
+    public void setModelProcessId(Long modelProcessId) {
+        this.modelProcessId = modelProcessId;
+    }
+
     public String getProcessId() {
-        return processId;
+        if (modelProcessId != null) {
+            return String.valueOf(modelProcessId);
+        }
+        return legacyProcessId;
     }
 
     public void setProcessId(String processId) {
-        this.processId = processId;
+        if (processId == null || processId.isBlank()) {
+            this.modelProcessId = null;
+            this.legacyProcessId = processId;
+            return;
+        }
+        try {
+            this.modelProcessId = Long.valueOf(processId);
+            this.legacyProcessId = null;
+        } catch (NumberFormatException ignored) {
+            this.modelProcessId = null;
+            this.legacyProcessId = processId;
+        }
     }
 
     public String getAgentId() {
@@ -228,11 +254,11 @@ public class ModelProcess {
         if (!(o instanceof ModelProcess other)) {
             return false;
         }
-        return processId != null && processId.equals(other.processId);
+        return modelProcessId != null && modelProcessId.equals(other.modelProcessId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(processId);
+        return Objects.hashCode(modelProcessId);
     }
 }

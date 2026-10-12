@@ -7,9 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ModelProcessRepository extends JpaRepository<ModelProcess, String> {
+public interface ModelProcessRepository extends JpaRepository<ModelProcess, Long> {
 
     List<ModelProcess> findByAgentId(String agentId);
-
-    List<ModelProcess> findByProcessId(String processId);
 }

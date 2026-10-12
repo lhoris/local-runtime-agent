@@ -52,8 +52,8 @@ class ApiControllerTest {
     @Test
     void listAgentsReturnsAgentsWithProcessesInSnakeCase() throws Exception {
         seedAgent("agent-1", "host-1");
-        seedProcess("proc-1", "agent-1");
-        seedStatus("status-1", "agent-1", "proc-1", "RUNNING", "HEALTHY", 1234);
+        seedProcess("1", "agent-1");
+        seedStatus("status-1", "agent-1", "1", "RUNNING", "HEALTHY", 1234);
 
         mockMvc.perform(get("/api/v1/agents"))
                 .andExpect(status().isOk())
@@ -62,7 +62,7 @@ class ApiControllerTest {
                 .andExpect(jsonPath("$.agents[0].hostname", is("host-1")))
                 .andExpect(jsonPath("$.agents[0].status", is("HEALTHY")))
                 .andExpect(jsonPath("$.agents[0].processes", hasSize(1)))
-                .andExpect(jsonPath("$.agents[0].processes[0].process_id", is("proc-1")))
+                .andExpect(jsonPath("$.agents[0].processes[0].process_id", is("1")))
                 .andExpect(jsonPath("$.agents[0].processes[0].pid", is(1234)));
     }
 
@@ -98,8 +98,8 @@ class ApiControllerTest {
     @Test
     void createCommandPersistsPendingCommand() throws Exception {
         seedAgent("agent-1", "host-1");
-        seedProcess("proc-1", "agent-1");
-        String body = "{\"agent_id\":\"agent-1\",\"process_id\":\"proc-1\","
+        seedProcess("1", "agent-1");
+        String body = "{\"agent_id\":\"agent-1\",\"process_id\":\"1\","
                 + "\"command_type\":\"RESTART\",\"parameters\":{}}";
 
         mockMvc.perform(post("/api/v1/commands")
@@ -116,22 +116,22 @@ class ApiControllerTest {
     @Disabled("Parameter update feature - pending enterprise implementation")
     void updateParameterCreatesActiveVersionAndIsReturnedByGet() throws Exception {
         seedAgent("agent-9", "host-9");
-        seedProcess("proc-9", "agent-9");
-        String body = "{\"process_id\":\"proc-9\",\"param_key\":\"temperature\","
+        seedProcess("9", "agent-9");
+        String body = "{\"process_id\":\"9\",\"param_key\":\"temperature\","
                 + "\"param_value\":\"0.7\",\"apply_immediately\":false}";
 
         mockMvc.perform(post("/api/v1/parameters")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.process_id", is("proc-9")))
+                .andExpect(jsonPath("$.process_id", is("9")))
                 .andExpect(jsonPath("$.param_key", is("temperature")))
                 .andExpect(jsonPath("$.param_value", is("0.7")))
                 .andExpect(jsonPath("$.param_type", is("FLOAT")))
                 .andExpect(jsonPath("$.version", is(1)))
                 .andExpect(jsonPath("$.is_active", is(true)));
 
-        mockMvc.perform(get("/api/v1/parameters/{processId}", "proc-9"))
+        mockMvc.perform(get("/api/v1/parameters/{processId}", "9"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].param_key", is("temperature")));
@@ -141,20 +141,20 @@ class ApiControllerTest {
     @Disabled("Execution log filtering test - pending database schema refinement")
     void executionLogsReturnFilteredPagedResults() throws Exception {
         seedAgent("agent-1", "host-1");
-        seedProcess("proc-7", "agent-1");
-        seedProcess("proc-other", "agent-1");
-        seedLog("log-1", "agent-1", "proc-7");
-        seedLog("log-2", "agent-1", "proc-7");
-        seedLog("log-3", "agent-1", "proc-other");
+        seedProcess("7", "agent-1");
+        seedProcess("8", "agent-1");
+        seedLog("log-1", "agent-1", "7");
+        seedLog("log-2", "agent-1", "7");
+        seedLog("log-3", "agent-1", "8");
 
         mockMvc.perform(get("/api/v1/execution-logs")
-                        .param("process_id", "proc-7")
+                        .param("process_id", "7")
                         .param("limit", "10")
                         .param("offset", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total", is(2)))
                 .andExpect(jsonPath("$.logs", hasSize(2)))
-                .andExpect(jsonPath("$.logs[0].process_id", is("proc-7")));
+                .andExpect(jsonPath("$.logs[0].process_id", is("7")));
     }
 
     private void seedAgent(String agentId, String hostname) {
@@ -175,7 +175,7 @@ class ApiControllerTest {
 
     private void seedStatus(String statusId, String agentId, String processId,
                             String state, String health, int pid) {
-        ModelProcess status = modelProcessRepository.findById(processId)
+        ModelProcess status = modelProcessRepository.findById(Long.valueOf(processId))
                 .orElseGet(ModelProcess::new);
         status.setProcessId(processId);
         status.setAgentId(agentId);

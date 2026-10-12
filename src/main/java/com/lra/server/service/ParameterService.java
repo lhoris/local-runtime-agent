@@ -79,11 +79,19 @@ public class ParameterService {
     }
 
     private void enqueueRestart(String processId) {
-        ModelProcess process = modelProcessRepository.findById(processId)
+        ModelProcess process = modelProcessRepository.findById(parseModelProcessId(processId))
                 .orElseThrow(() -> ApiException.badRequest(
                         "Cannot apply immediately: process not found: " + processId));
         commandService.createCommand(new CommandCreateRequest(
                 process.getAgentId(), processId, CommandType.RESTART, Map.of()));
+    }
+
+    private Long parseModelProcessId(String processId) {
+        try {
+            return Long.valueOf(processId);
+        } catch (NumberFormatException | NullPointerException ex) {
+            throw ApiException.badRequest("MODEL_PROCESS_ID must be numeric: " + processId);
+        }
     }
 
     private ParameterDto toDto(ModelParameter param) {

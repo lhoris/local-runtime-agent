@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
     DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     -- Existing vision-monitor business columns
-    PROCESS_ID VARCHAR(64) PRIMARY KEY COMMENT 'Managed process unique identifier',
+    MODEL_PROCESS_ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Shared vision-monitor model process identifier',
     PROCESS_AREA_CODE VARCHAR(64) COMMENT 'Existing vision-monitor process area code',
     MODEL_NAME VARCHAR(256) COMMENT 'Human-readable model or process name',
     AUTOMATION_NAME VARCHAR(256) COMMENT 'Existing vision-monitor automation name',
@@ -68,8 +68,6 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     ERROR_MESSAGE LONGTEXT COMMENT 'Latest process or health error message'
 ) COMMENT='Process definition and latest runtime status for each managed model process';
 
-CREATE INDEX IF NOT EXISTS IDX_M26_MODEL_PROCESS_AGENT
-    ON TB_M26_MODEL_PROCESS (AGENT_ID, PROCESS_ID);
 
 CREATE TABLE IF NOT EXISTS TB_M26_COMMAND (
     CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',

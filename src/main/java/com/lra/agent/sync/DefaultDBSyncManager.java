@@ -83,7 +83,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
         List<ProcessStatus> statuses = processManager.getAllStatus();
         Instant now = Instant.now();
         for (ProcessStatus status : statuses) {
-            ModelProcess record = modelProcessRepository.findById(status.getModelId())
+            ModelProcess record = modelProcessRepository.findById(parseModelProcessId(status.getModelId()))
                     .orElseGet(ModelProcess::new);
             record.setProcessId(status.getModelId());
             record.setAgentId(agentId);
@@ -196,9 +196,17 @@ public class DefaultDBSyncManager implements DBSyncManager {
     }
 
     private ModelProcess requireProcess(String modelId) {
-        return modelProcessRepository.findById(modelId)
+        return modelProcessRepository.findById(parseModelProcessId(modelId))
                 .orElseThrow(() -> new IllegalStateException(
                         "No model process found: " + modelId));
+    }
+
+    private Long parseModelProcessId(String modelId) {
+        try {
+            return Long.valueOf(modelId);
+        } catch (NumberFormatException | NullPointerException ex) {
+            throw new IllegalArgumentException("MODEL_PROCESS_ID must be numeric: " + modelId, ex);
+        }
     }
 
     private Map<String, Object> snapshotStatus() {
