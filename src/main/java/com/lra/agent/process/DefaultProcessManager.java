@@ -51,7 +51,12 @@ public class DefaultProcessManager implements ProcessManager {
 
         if (mp.getProcess() == null) {
             mp.setPid(definition.getPid());
-            mp.setState(parseState(definition.getState()));
+            if (mp.getPid() == null) {
+                log.info("PID가 없어 {} 상태를 STOPPED로 판단", modelId);
+                mp.setState(ProcessState.STOPPED);
+            } else {
+                mp.setState(parseState(definition.getState()));
+            }
         }
 
         boolean alive = mp.isAlive();
