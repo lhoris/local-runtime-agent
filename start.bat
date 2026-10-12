@@ -6,7 +6,7 @@ rem Keep Korean application logs readable in the Windows console.
 chcp 65001 >nul
 
 rem Set this to the Java executable installed on the VM.
-set "JAVA_EXE=C:\Program Files\Java\jdk-21\bin\java.exe"
+set "JAVA_EXE=D:\ws\JDK\jdk-21.0.2\bin\java.exe"
 set "PROJECT_HOME=%~dp0"
 set "JAR="
 
