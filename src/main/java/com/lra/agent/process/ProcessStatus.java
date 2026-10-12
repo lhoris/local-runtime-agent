@@ -1,6 +1,7 @@
 package com.lra.agent.process;
 
 import com.lra.common.enums.ProcessState;
+import com.lra.common.enums.HealthStatus;
 import java.time.LocalDateTime;
 
 /**
@@ -11,6 +12,7 @@ public class ProcessStatus {
 
     private String modelId;
     private ProcessState state;
+    private HealthStatus healthStatus;
     private Integer pid;
     private Float cpuPercent;
     private Integer memoryMb;
@@ -40,6 +42,14 @@ public class ProcessStatus {
 
     public void setState(ProcessState state) {
         this.state = state;
+    }
+
+    public HealthStatus getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(HealthStatus healthStatus) {
+        this.healthStatus = healthStatus;
     }
 
     public Integer getPid() {

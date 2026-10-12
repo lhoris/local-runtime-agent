@@ -89,6 +89,9 @@ public class DefaultDBSyncManager implements DBSyncManager {
             record.setAgentId(agentId);
             record.setState(status.getState() != null ? status.getState().toString() : null);
             record.setPid(status.getPid());
+            record.setHealthStatus(status.getHealthStatus() != null
+                    ? status.getHealthStatus().name()
+                    : null);
             record.setUptimeSec(status.getUptimeSec());
             record.setLastHealthCheck(now);
             record.setLastHeartbeat(now);

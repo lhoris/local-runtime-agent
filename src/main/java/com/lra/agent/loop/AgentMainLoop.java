@@ -134,14 +134,23 @@ public class AgentMainLoop {
         }
         for (ProcessStatus status : statuses) {
             if (status.getState() != ProcessState.RUNNING) {
+                status.setHealthStatus(HealthStatus.UNKNOWN);
+                log.info("헬스체크 결과: modelProcessId={}, healthStatus=UNKNOWN (프로세스 미실행)",
+                        status.getModelId());
                 continue;
             }
             try {
                 HealthStatus health = healthChecker.checkHealth(status.getModelId());
+                status.setHealthStatus(health);
+                log.info("헬스체크 결과: modelProcessId={}, healthStatus={}",
+                        status.getModelId(), health);
                 if (health == HealthStatus.UNHEALTHY) {
                     transition(status.getModelId(), ProcessState.UNHEALTHY);
                 }
             } catch (HealthCheckException ex) {
+                status.setHealthStatus(HealthStatus.UNKNOWN);
+                log.info("헬스체크 결과: modelProcessId={}, healthStatus=UNKNOWN (오류)",
+                        status.getModelId());
                 log.warn("Health check failed for {}", status.getModelId(), ex);
             }
         }
