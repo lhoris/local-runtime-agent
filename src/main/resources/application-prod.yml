@@ -1,10 +1,10 @@
 spring:
   datasource:
     # All values must come from the environment in production; no defaults.
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=${DB_USE_SSL:false}&requireSSL=${DB_USE_SSL:false}
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSsl=${DB_USE_SSL:false}&requireSsl=${DB_USE_SSL:false}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.mariadb.jdbc.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_MAX:10}
       minimum-idle: ${DB_POOL_MIN:2}
@@ -13,6 +13,10 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
 
 server:
   port: ${SERVER_PORT:8080}
