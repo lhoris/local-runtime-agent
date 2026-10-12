@@ -14,7 +14,7 @@ SELECT
     UUID(),
     a.AGENT_ID,
     '1001',
-    'START',
+    'RESTART',
     'PENDING',
     JSON_OBJECT()
 FROM TB_M26_AGENT a
