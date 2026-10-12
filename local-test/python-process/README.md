@@ -40,3 +40,6 @@ The Agent stores the PID of the foreground `cmd.exe` wrapper started for
 `run.bat`. Because the Python process stays in the foreground, the wrapper
 also exits when the Python process exits, so PID liveness is useful for the
 Agent's local smoke test.
+
+Run `command-test.sql` from this folder to enqueue a command with one INSERT
+statement. Change the IP address, model process ID, and command type first.

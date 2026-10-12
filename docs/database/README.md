@@ -11,7 +11,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 5. Confirm that the process row uses the created `AGENT_ID`.
 6. Run `smoke-test.sql` to verify Agent registration, process assignment, and heartbeat updates.
 7. Run `runtime-verification.sql` to inspect the complete loop flow, process PID, heartbeat, command results, and execution logs.
-8. Run `command-test.sql` to insert a `START`, `STOP`, or `RESTART` command for a local smoke test.
+8. Run `local-test/python-process/command-test.sql` to insert a `START`, `STOP`, or `RESTART` command for the local Python smoke test.
 
 `TB_M26_MODEL_PROCESS` keeps the existing vision-monitor business columns and also contains the Agent execution/runtime columns. The Agent does not maintain a separate monitoring-target registration table.
 
