@@ -4,7 +4,8 @@
 SET @agent_id = 'agent-local-01';
 SET @agent_ip = '192.168.0.7';
 SET @hostname = 'LOCAL-PC';
-SET @process_id = 'model-local-01';
+SET @model_process_id = 1001;
+SET @process_id = CAST(@model_process_id AS CHAR);
 SET @python_project_path = 'C:/models/example';
 
 INSERT INTO TB_M26_AGENT (
@@ -18,7 +19,7 @@ ON DUPLICATE KEY UPDATE
     LAST_UPDATED_TIMESTAMP = CURRENT_TIMESTAMP();
 
 INSERT INTO TB_M26_MODEL_PROCESS (
-    PROCESS_ID,
+    MODEL_PROCESS_ID,
     AGENT_ID,
     MODEL_NAME,
     PYTHON_PROJECT_PATH,
@@ -30,7 +31,7 @@ INSERT INTO TB_M26_MODEL_PROCESS (
     HEALTH_CHECK_INTERVAL_SEC,
     PROCESS_STATUS
 ) VALUES (
-    @process_id,
+    @model_process_id,
     @agent_id,
     'Example Model',
     @python_project_path,
@@ -56,6 +57,6 @@ SELECT AGENT_ID, HOSTNAME, IP_ADDRESS
 FROM TB_M26_AGENT
 WHERE AGENT_ID = @agent_id;
 
-SELECT PROCESS_ID, AGENT_ID, PYTHON_PROJECT_PATH, PROCESS_STATUS, AUTO_RESTART
+SELECT MODEL_PROCESS_ID, AGENT_ID, PYTHON_PROJECT_PATH, PROCESS_STATUS, AUTO_RESTART
 FROM TB_M26_MODEL_PROCESS
 WHERE AGENT_ID = @agent_id;

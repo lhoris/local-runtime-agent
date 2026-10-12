@@ -12,10 +12,10 @@ SHOW CREATE TABLE TB_M26_MODEL_PROCESS;
 SELECT COUNT(*) AS EXISTING_PROCESS_COUNT
 FROM TB_M26_MODEL_PROCESS;
 
--- 1. Add the Agent columns that are not part of the original vision-monitor table.
+-- 1. Add the shared vision-monitor identifier and Agent columns.
 ALTER TABLE TB_M26_MODEL_PROCESS
-    ADD COLUMN IF NOT EXISTS PROCESS_ID VARCHAR(64) NULL COMMENT 'Managed process unique identifier' AFTER DESCRIPTION,
-    ADD COLUMN IF NOT EXISTS AGENT_ID VARCHAR(64) NULL COMMENT 'Agent responsible for this process' AFTER PROCESS_ID,
+    ADD COLUMN IF NOT EXISTS MODEL_PROCESS_ID BIGINT UNSIGNED NULL COMMENT 'Shared vision-monitor model process identifier' AFTER DATA_END_TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS AGENT_ID VARCHAR(64) NULL COMMENT 'Agent responsible for this process' AFTER MODEL_PROCESS_ID,
     ADD COLUMN IF NOT EXISTS PYTHON_PROJECT_PATH VARCHAR(512) NULL COMMENT 'Python project directory containing run.bat, stop.bat, and restart.bat',
     ADD COLUMN IF NOT EXISTS AUTO_RESTART BOOLEAN DEFAULT TRUE COMMENT 'Whether crashed processes are restarted automatically',
     ADD COLUMN IF NOT EXISTS MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT 'Maximum automatic restart attempts',
@@ -31,15 +31,20 @@ ALTER TABLE TB_M26_MODEL_PROCESS
     ADD COLUMN IF NOT EXISTS UPTIME_SEC BIGINT NULL COMMENT 'Latest observed process uptime in seconds',
     ADD COLUMN IF NOT EXISTS ERROR_MESSAGE LONGTEXT NULL COMMENT 'Latest process or health error message';
 
--- 2. Populate PROCESS_ID for existing rows. Review the generated values before
--- adding the primary key if the old table already has a different primary key.
-UPDATE TB_M26_MODEL_PROCESS
-SET PROCESS_ID = UUID()
-WHERE PROCESS_ID IS NULL OR PROCESS_ID = '';
+-- 2. Populate MODEL_PROCESS_ID for existing rows. Existing rows are retained;
+-- only the new identifier column is filled.
+SET @next_model_process_id = (
+    SELECT COALESCE(MAX(MODEL_PROCESS_ID), 0)
+    FROM TB_M26_MODEL_PROCESS
+);
 
-SELECT PROCESS_ID, COUNT(*) AS ROW_COUNT
+UPDATE TB_M26_MODEL_PROCESS
+SET MODEL_PROCESS_ID = (@next_model_process_id := @next_model_process_id + 1)
+WHERE MODEL_PROCESS_ID IS NULL;
+
+SELECT MODEL_PROCESS_ID, COUNT(*) AS ROW_COUNT
 FROM TB_M26_MODEL_PROCESS
-GROUP BY PROCESS_ID
+GROUP BY MODEL_PROCESS_ID
 HAVING COUNT(*) > 1;
 
 -- 3. Resolve Agent ownership from the existing SERVER_IP column.
@@ -49,19 +54,26 @@ SET p.AGENT_ID = a.AGENT_ID
 WHERE p.AGENT_ID IS NULL OR p.AGENT_ID = '';
 
 -- 4. Inspect rows that still need an Agent assignment before enforcing NOT NULL.
-SELECT PROCESS_ID, PROCESS_AREA_CODE, MODEL_NAME, SERVER_IP
+SELECT MODEL_PROCESS_ID, PROCESS_AREA_CODE, MODEL_NAME, SERVER_IP
 FROM TB_M26_MODEL_PROCESS
 WHERE AGENT_ID IS NULL OR AGENT_ID = '';
+
+SELECT MODEL_PROCESS_ID
+FROM TB_M26_MODEL_PROCESS
+WHERE MODEL_PROCESS_ID IS NULL;
 
 -- 5. After the previous query returns no rows, enforce the Agent contract.
 -- Execute this block only after every existing row has an AGENT_ID.
 ALTER TABLE TB_M26_MODEL_PROCESS
-    MODIFY COLUMN PROCESS_ID VARCHAR(64) NOT NULL,
+    MODIFY COLUMN MODEL_PROCESS_ID BIGINT UNSIGNED NOT NULL,
     MODIFY COLUMN AGENT_ID VARCHAR(64) NOT NULL;
 
--- Add the primary key only when the existing table does not already have one.
--- Verify with SHOW CREATE TABLE TB_M26_MODEL_PROCESS before running this line.
--- ALTER TABLE TB_M26_MODEL_PROCESS ADD PRIMARY KEY (PROCESS_ID);
+-- Make the shared identifier usable by JPA and future inserts.
+CREATE UNIQUE INDEX IF NOT EXISTS UK_M26_MODEL_PROCESS_ID
+    ON TB_M26_MODEL_PROCESS (MODEL_PROCESS_ID);
+
+ALTER TABLE TB_M26_MODEL_PROCESS
+    MODIFY COLUMN MODEL_PROCESS_ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT;
 
 CREATE INDEX IF NOT EXISTS IDX_M26_MODEL_PROCESS_AGENT
-    ON TB_M26_MODEL_PROCESS (AGENT_ID, PROCESS_ID);
+    ON TB_M26_MODEL_PROCESS (AGENT_ID, MODEL_PROCESS_ID);

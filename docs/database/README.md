@@ -18,7 +18,8 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `TB_M26_AGENT.IP_ADDRESS` identifies the local Agent. The row is created automatically on first startup.
 - `AGENT_ID` is generated from the local hostname; it does not need to be configured in application properties.
 - `TB_M26_MODEL_PROCESS.AGENT_ID` assigns a process to an Agent.
-- `TB_M26_MODEL_PROCESS.PROCESS_ID` is the shared process primary key.
+- `TB_M26_MODEL_PROCESS.MODEL_PROCESS_ID` is the shared vision-monitor primary key.
+- `TB_M26_COMMAND.PROCESS_ID` is the command/API target value and contains the model process ID as text.
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
 - `PYTHON_PROJECT_PATH` points to a project directory containing `run.bat`, `stop.bat`, and `restart.bat`.
 
