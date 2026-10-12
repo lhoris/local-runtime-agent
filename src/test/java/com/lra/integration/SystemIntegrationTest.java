@@ -23,6 +23,7 @@ import com.lra.db.repository.CommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
 import java.time.Duration;
+import java.io.File;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -207,8 +208,7 @@ class SystemIntegrationTest {
 
         agentRepository.save(newAgent(agentId, "ml-server-s4"));
         ModelProcess config = newProcess(modelId, agentId, "INFERENCE");
-        config.setExecutablePath(pythonExe);
-        config.setCommandArgs(objectMapper.writeValueAsString(List.of(script)));
+        config.setPythonProjectPath(new File(script).getParent());
         config.setRestartDelaySec(0);
         modelProcessRepository.save(config);
 

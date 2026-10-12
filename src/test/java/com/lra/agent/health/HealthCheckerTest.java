@@ -129,47 +129,14 @@ class HealthCheckerTest {
     }
 
     @Test
-    void testCpuExceededTransitionsToDegraded() throws Exception {
-        ProcessStatus status = runningStatus();
-        status.setCpuPercent(95f);
-        when(processManager.getStatus(MODEL_ID)).thenReturn(status);
-
-        ModelProcess definition = new ModelProcess();
-        definition.setCpuLimitPercent(90);
-        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
-
+    void testResourceCheckDoesNotChangeMinimalState() throws Exception {
         healthChecker.detectResource(MODEL_ID);
 
-        verify(stateManager).transitionTo(MODEL_ID, ProcessState.DEGRADED);
-    }
-
-    @Test
-    void testMemoryExceededTransitionsToDegraded() throws Exception {
-        ProcessStatus status = runningStatus();
-        status.setMemoryMb(2048);
-        when(processManager.getStatus(MODEL_ID)).thenReturn(status);
-
-        ModelProcess definition = new ModelProcess();
-        definition.setMemoryLimitMb(1024);
-        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
-
-        healthChecker.detectResource(MODEL_ID);
-
-        verify(stateManager).transitionTo(MODEL_ID, ProcessState.DEGRADED);
+        verify(stateManager, never()).transitionTo(eq(MODEL_ID), eq(ProcessState.DEGRADED));
     }
 
     @Test
     void testWithinLimitsDoesNotTransition() throws Exception {
-        ProcessStatus status = runningStatus();
-        status.setCpuPercent(50f);
-        status.setMemoryMb(512);
-        when(processManager.getStatus(MODEL_ID)).thenReturn(status);
-
-        ModelProcess definition = new ModelProcess();
-        definition.setCpuLimitPercent(90);
-        definition.setMemoryLimitMb(1024);
-        when(modelProcessRepository.findById(MODEL_ID)).thenReturn(Optional.of(definition));
-
         healthChecker.detectResource(MODEL_ID);
 
         verify(stateManager, never()).transitionTo(eq(MODEL_ID), eq(ProcessState.DEGRADED));

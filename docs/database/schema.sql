@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     MODEL_NAME VARCHAR(256) COMMENT 'Human-readable model or process name',
     AUTOMATION_NAME VARCHAR(256) COMMENT 'Existing vision-monitor automation name',
     SERVER_IP VARCHAR(45) COMMENT 'Existing server IP for the process',
-    PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'Existing Python project path',
+    PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'Python project directory containing run.bat, stop.bat, and restart.bat',
     PROCESS_STATUS VARCHAR(32) COMMENT 'Shared process lifecycle status',
     MONITORING_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor monitoring status',
     CONTROL_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor control status',
@@ -53,29 +53,18 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
 
     -- Agent ownership and execution columns
     AGENT_ID VARCHAR(64) NOT NULL COMMENT 'Agent responsible for this process',
-    MODEL_TYPE VARCHAR(64) COMMENT 'Process category such as INFERENCE or RUNTIME',
-    EXECUTABLE_PATH VARCHAR(512) COMMENT 'Executable or interpreter path',
-    WORKING_DIRECTORY VARCHAR(512) COMMENT 'Working directory for the process',
-    COMMAND_ARGS LONGTEXT COMMENT 'Command arguments as a JSON array',
-    ENV_VARS LONGTEXT COMMENT 'Environment variables as a JSON object',
     AUTO_RESTART BOOLEAN DEFAULT TRUE COMMENT 'Whether crashed processes are restarted automatically',
     MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT 'Maximum automatic restart attempts',
     RESTART_DELAY_SEC INT DEFAULT 10 COMMENT 'Delay before automatic restart in seconds',
     TIMEOUT_SEC INT DEFAULT 3600 COMMENT 'Process operation timeout in seconds',
-    MEMORY_LIMIT_MB INT COMMENT 'Configured memory limit in megabytes',
-    CPU_LIMIT_PERCENT INT COMMENT 'Configured CPU limit percentage',
     HEALTH_CHECK_ENABLED BOOLEAN DEFAULT TRUE COMMENT 'Whether health checks are enabled',
     HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30 COMMENT 'Health check interval in seconds',
     HEALTH_CHECK_ENDPOINT VARCHAR(512) COMMENT 'Optional local health endpoint',
     PROCESS_PID INT COMMENT 'Latest operating system process ID',
-    CPU_PERCENT DECIMAL(5,2) COMMENT 'Latest observed CPU usage percentage',
-    MEMORY_MB INT COMMENT 'Latest observed memory usage in megabytes',
     LAST_HEALTH_CHECK TIMESTAMP NULL COMMENT 'Timestamp of the latest health check',
     LAST_HEARTBEAT TIMESTAMP NULL COMMENT 'Timestamp of the latest Agent status update',
     HEALTH_STATUS VARCHAR(32) COMMENT 'Latest health check result',
     UPTIME_SEC BIGINT COMMENT 'Latest observed process uptime in seconds',
-    CRASH_COUNT INT DEFAULT 0 COMMENT 'Number of detected crashes',
-    LAST_CRASH_TIME TIMESTAMP NULL COMMENT 'Timestamp of the latest detected crash',
     ERROR_MESSAGE LONGTEXT COMMENT 'Latest process or health error message'
 ) COMMENT='Process definition and latest runtime status for each managed model process';
 

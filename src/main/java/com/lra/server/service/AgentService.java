@@ -80,8 +80,8 @@ public class AgentService {
                 status.getProcessId(),
                 status.getState(),
                 status.getPid(),
-                status.getCpuPercent(),
-                status.getMemoryMb());
+                null,
+                null);
     }
 
     private Instant lastHeartbeat(String agentId) {

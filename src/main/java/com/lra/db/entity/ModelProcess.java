@@ -30,20 +30,8 @@ public class ModelProcess {
     @Column(name = "MODEL_NAME", length = 256)
     private String modelName;
 
-    @Column(name = "MODEL_TYPE", length = 64)
-    private String modelType;
-
-    @Column(name = "EXECUTABLE_PATH", length = 512)
-    private String executablePath;
-
-    @Column(name = "WORKING_DIRECTORY", length = 512)
-    private String workingDirectory;
-
-    @Column(name = "COMMAND_ARGS", columnDefinition = "text")
-    private String commandArgs;
-
-    @Column(name = "ENV_VARS", columnDefinition = "text")
-    private String envVars;
+    @Column(name = "PYTHON_PROJECT_PATH", length = 512)
+    private String pythonProjectPath;
 
     @Column(name = "AUTO_RESTART")
     private Boolean autoRestart;
@@ -56,12 +44,6 @@ public class ModelProcess {
 
     @Column(name = "TIMEOUT_SEC")
     private Integer timeoutSec;
-
-    @Column(name = "MEMORY_LIMIT_MB")
-    private Integer memoryLimitMb;
-
-    @Column(name = "CPU_LIMIT_PERCENT")
-    private Integer cpuLimitPercent;
 
     @Column(name = "HEALTH_CHECK_ENABLED")
     private Boolean healthCheckEnabled;
@@ -79,12 +61,6 @@ public class ModelProcess {
     @Column(name = "PROCESS_PID")
     private Integer pid;
 
-    @Column(name = "CPU_PERCENT")
-    private Float cpuPercent;
-
-    @Column(name = "MEMORY_MB")
-    private Integer memoryMb;
-
     @Column(name = "LAST_HEALTH_CHECK")
     private Instant lastHealthCheck;
 
@@ -96,12 +72,6 @@ public class ModelProcess {
 
     @Column(name = "UPTIME_SEC")
     private Long uptimeSec;
-
-    @Column(name = "CRASH_COUNT")
-    private Integer crashCount;
-
-    @Column(name = "LAST_CRASH_TIME")
-    private Instant lastCrashTime;
 
     @Column(name = "ERROR_MESSAGE", columnDefinition = "text")
     private String errorMessage;
@@ -130,44 +100,12 @@ public class ModelProcess {
         this.modelName = modelName;
     }
 
-    public String getModelType() {
-        return modelType;
+    public String getPythonProjectPath() {
+        return pythonProjectPath;
     }
 
-    public void setModelType(String modelType) {
-        this.modelType = modelType;
-    }
-
-    public String getExecutablePath() {
-        return executablePath;
-    }
-
-    public void setExecutablePath(String executablePath) {
-        this.executablePath = executablePath;
-    }
-
-    public String getWorkingDirectory() {
-        return workingDirectory;
-    }
-
-    public void setWorkingDirectory(String workingDirectory) {
-        this.workingDirectory = workingDirectory;
-    }
-
-    public String getCommandArgs() {
-        return commandArgs;
-    }
-
-    public void setCommandArgs(String commandArgs) {
-        this.commandArgs = commandArgs;
-    }
-
-    public String getEnvVars() {
-        return envVars;
-    }
-
-    public void setEnvVars(String envVars) {
-        this.envVars = envVars;
+    public void setPythonProjectPath(String pythonProjectPath) {
+        this.pythonProjectPath = pythonProjectPath;
     }
 
     public Boolean getAutoRestart() {
@@ -200,22 +138,6 @@ public class ModelProcess {
 
     public void setTimeoutSec(Integer timeoutSec) {
         this.timeoutSec = timeoutSec;
-    }
-
-    public Integer getMemoryLimitMb() {
-        return memoryLimitMb;
-    }
-
-    public void setMemoryLimitMb(Integer memoryLimitMb) {
-        this.memoryLimitMb = memoryLimitMb;
-    }
-
-    public Integer getCpuLimitPercent() {
-        return cpuLimitPercent;
-    }
-
-    public void setCpuLimitPercent(Integer cpuLimitPercent) {
-        this.cpuLimitPercent = cpuLimitPercent;
     }
 
     public Boolean getHealthCheckEnabled() {
@@ -258,22 +180,6 @@ public class ModelProcess {
         this.pid = pid;
     }
 
-    public Float getCpuPercent() {
-        return cpuPercent;
-    }
-
-    public void setCpuPercent(Float cpuPercent) {
-        this.cpuPercent = cpuPercent;
-    }
-
-    public Integer getMemoryMb() {
-        return memoryMb;
-    }
-
-    public void setMemoryMb(Integer memoryMb) {
-        this.memoryMb = memoryMb;
-    }
-
     public Instant getLastHealthCheck() {
         return lastHealthCheck;
     }
@@ -304,22 +210,6 @@ public class ModelProcess {
 
     public void setUptimeSec(Long uptimeSec) {
         this.uptimeSec = uptimeSec;
-    }
-
-    public Integer getCrashCount() {
-        return crashCount;
-    }
-
-    public void setCrashCount(Integer crashCount) {
-        this.crashCount = crashCount;
-    }
-
-    public Instant getLastCrashTime() {
-        return lastCrashTime;
-    }
-
-    public void setLastCrashTime(Instant lastCrashTime) {
-        this.lastCrashTime = lastCrashTime;
     }
 
     public String getErrorMessage() {

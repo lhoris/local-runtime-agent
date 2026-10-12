@@ -1,7 +1,5 @@
 package com.lra.agent.process;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.ModelProcess;
 import java.io.File;
@@ -35,12 +33,10 @@ public class DefaultProcessManager implements ProcessManager {
     private static final int DEFAULT_MAX_RESTART_ATTEMPTS = 3;
 
     private final ProcessLauncher launcher;
-    private final ObjectMapper objectMapper;
     private final Map<String, ManagedProcess> processes = new ConcurrentHashMap<>();
 
-    public DefaultProcessManager(ProcessLauncher launcher, ObjectMapper objectMapper) {
+    public DefaultProcessManager(ProcessLauncher launcher) {
         this.launcher = launcher;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -91,13 +87,8 @@ public class DefaultProcessManager implements ProcessManager {
         }
 
         transition(mp, ProcessState.STARTING);
-        List<String> command = buildCommand(definition);
-        File workingDir = definition.getWorkingDirectory() == null ? null
-            : new File(definition.getWorkingDirectory());
-        Map<String, String> env = parseEnv(definition.getEnvVars());
-
         try {
-            Process process = launcher.launch(command, workingDir, env);
+            Process process = runControlScript(definition, "run.bat");
             mp.setProcess(process);
             mp.setStartTime(Instant.now());
             mp.setPid(toInt(process.pid()));
@@ -131,7 +122,7 @@ public class DefaultProcessManager implements ProcessManager {
         java.util.Optional<ProcessHandle> match = findMatchingProcess(definition);
         if (match.isEmpty()) {
             throw new IllegalStateException(
-                "No running local process matched executable and arguments for " + modelId);
+                "No running local process matched the configured project directory for " + modelId);
         }
 
         ProcessHandle handle = match.get();
@@ -151,10 +142,16 @@ public class DefaultProcessManager implements ProcessManager {
         }
         transition(mp, ProcessState.STOPPING);
         try {
-            stopAliveProcess(mp, strategy);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Interrupted while stopping {}", modelId);
+            if (mp.getDefinition() != null) {
+                runControlScript(mp.getDefinition(), "stop.bat");
+            } else {
+                stopAliveProcess(mp, strategy);
+            }
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.warn("Failed to stop process {}: {}", modelId, e.getMessage());
         } finally {
             transition(mp, ProcessState.STOPPED);
         }
@@ -168,9 +165,20 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
         ModelProcess definition = mp.getDefinition();
-        stopProcess(modelId, StopStrategy.GRACEFUL);
-        sleepSeconds(restartDelaySec(definition));
-        startProcess(modelId, definition);
+        if (definition == null) {
+            log.warn("restartProcess ignored, {} has no definition", modelId);
+            return;
+        }
+        try {
+            Process process = runControlScript(definition, "restart.bat");
+            mp.setProcess(process);
+            mp.setStartTime(Instant.now());
+            mp.setPid(toInt(process.pid()));
+            transition(mp, process.isAlive() ? ProcessState.RUNNING : ProcessState.CRASHED);
+        } catch (Exception e) {
+            log.error("Failed to restart process {}: {}", modelId, e.getMessage(), e);
+            transition(mp, ProcessState.STOPPED);
+        }
     }
 
     @Override
@@ -236,66 +244,43 @@ public class DefaultProcessManager implements ProcessManager {
 
     // --- helpers -----------------------------------------------------------
 
-    private List<String> buildCommand(ModelProcess definition) {
-        List<String> command = new ArrayList<>();
-        if (definition.getExecutablePath() == null || definition.getExecutablePath().isBlank()) {
-            throw new IllegalArgumentException("executablePath is required for " + definition.getProcessId());
+    private File projectDirectory(ModelProcess definition) {
+        if (definition.getPythonProjectPath() == null || definition.getPythonProjectPath().isBlank()) {
+            throw new IllegalArgumentException("pythonProjectPath is required for " + definition.getProcessId());
         }
-        command.add(definition.getExecutablePath());
-        command.addAll(parseArgs(definition.getCommandArgs()));
-        return command;
+        File directory = new File(definition.getPythonProjectPath());
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("pythonProjectPath must be a directory: " + directory);
+        }
+        return directory;
+    }
+
+    private List<String> controlScriptCommand(String scriptName) {
+        return List.of("cmd.exe", "/c", scriptName);
+    }
+
+    private Process runControlScript(ModelProcess definition, String scriptName) throws Exception {
+        File directory = projectDirectory(definition);
+        File script = new File(directory, scriptName);
+        if (!script.isFile()) {
+            throw new IllegalStateException("Required control script is missing: " + script);
+        }
+        return launcher.launch(controlScriptCommand(scriptName), directory, Map.of());
     }
 
     private java.util.Optional<ProcessHandle> findMatchingProcess(ModelProcess definition) {
-        String executable = normalize(definition.getExecutablePath());
-        List<String> expectedArgs = parseArgs(definition.getCommandArgs());
+        String projectPath = normalize(definition.getPythonProjectPath());
         return ProcessHandle.allProcesses()
-            .filter(handle -> handle.info().command().map(command -> executableMatches(executable, command)).orElse(false))
-            .filter(handle -> argumentsMatch(expectedArgs, handle.info().arguments().orElse(new String[0])))
+            .filter(handle -> java.util.Arrays.stream(handle.info().arguments().orElse(new String[0]))
+                .map(this::normalize)
+                .anyMatch(argument -> argument.contains(projectPath)))
             .findFirst();
-    }
-
-    private boolean executableMatches(String expected, String actual) {
-        String normalizedActual = normalize(actual);
-        return normalizedActual.equals(expected)
-            || new File(normalizedActual).getName().equals(new File(expected).getName());
-    }
-
-    private boolean argumentsMatch(List<String> expected, String[] actual) {
-        if (expected.isEmpty()) {
-            return true;
-        }
-        List<String> actualArgs = List.of(actual);
-        return actualArgs.containsAll(expected);
     }
 
     private String normalize(String value) {
         return value == null ? "" : value.replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
     }
 
-    private List<String> parseArgs(String json) {
-        if (json == null || json.isBlank()) {
-            return List.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
-        } catch (Exception e) {
-            log.error("Invalid command_args JSON, ignoring: {}", e.getMessage());
-            return List.of();
-        }
-    }
-
-    private Map<String, String> parseEnv(String json) {
-        if (json == null || json.isBlank()) {
-            return Map.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
-        } catch (Exception e) {
-            log.error("Invalid env_vars JSON, ignoring: {}", e.getMessage());
-            return Map.of();
-        }
-    }
 
     void transition(ManagedProcess mp, ProcessState next) {
         ProcessState prev = mp.getState();

@@ -78,35 +78,8 @@ public class DefaultHealthChecker implements HealthChecker {
 
     @Override
     public void detectResource(String modelId) throws HealthCheckException {
-        ProcessStatus status = processManager.getStatus(modelId);
-        if (status == null || status.getState() != ProcessState.RUNNING) {
-            return;
-        }
-
-        ModelProcess definition = modelProcessRepository.findById(modelId).orElse(null);
-        if (definition == null) {
-            return;
-        }
-
-        boolean exceeded = false;
-
-        Integer cpuLimit = definition.getCpuLimitPercent();
-        Float cpu = status.getCpuPercent();
-        if (cpuLimit != null && cpuLimit > 0 && cpu != null && cpu > cpuLimit) {
-            log.warn("CPU limit exceeded for {}: {}% > {}%", modelId, cpu, cpuLimit);
-            exceeded = true;
-        }
-
-        Integer memLimit = definition.getMemoryLimitMb();
-        Integer mem = status.getMemoryMb();
-        if (memLimit != null && memLimit > 0 && mem != null && mem > memLimit) {
-            log.warn("Memory limit exceeded for {}: {}MB > {}MB", modelId, mem, memLimit);
-            exceeded = true;
-        }
-
-        if (exceeded) {
-            transition(modelId, ProcessState.DEGRADED);
-        }
+        // Resource metrics and limits are intentionally outside the minimal
+        // shared MODEL_PROCESS schema. PID/liveness remains the core check.
     }
 
     private void transition(String modelId, ProcessState target) {

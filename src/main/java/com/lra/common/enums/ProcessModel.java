@@ -1,7 +1,7 @@
 package com.lra.common.enums;
 
 /**
- * Category of the managed model process (TB_M26_MODEL_PROCESS.MODEL_TYPE).
+ * Legacy process category values retained for API compatibility.
  */
 public enum ProcessModel {
     INFERENCE,

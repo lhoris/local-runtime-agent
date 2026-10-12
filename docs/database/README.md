@@ -20,7 +20,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `TB_M26_MODEL_PROCESS.AGENT_ID` assigns a process to an Agent.
 - `TB_M26_MODEL_PROCESS.PROCESS_ID` is the shared process primary key.
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
-- `COMMAND_ARGS` and `ENV_VARS` are JSON values.
+- `PYTHON_PROJECT_PATH` points to a project directory containing `run.bat`, `stop.bat`, and `restart.bat`.
 
 All shared tables use the 14-column audit contract: `CREATED_*`, `LAST_UPDATED_*`, and `DATA_END_*`.
 

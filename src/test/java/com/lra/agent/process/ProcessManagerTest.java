@@ -9,34 +9,43 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.ModelProcess;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ProcessManagerTest {
 
     private ProcessLauncher launcher;
     private DefaultProcessManager manager;
     private DefaultProcessMonitor monitor;
+    @TempDir
+    private Path tempDir;
 
     @BeforeEach
     void setUp() {
         launcher = mock(ProcessLauncher.class);
-        manager = new DefaultProcessManager(launcher, new ObjectMapper());
+        manager = new DefaultProcessManager(launcher);
         monitor = new DefaultProcessMonitor(manager);
+        try {
+            Files.createFile(tempDir.resolve("run.bat"));
+            Files.createFile(tempDir.resolve("stop.bat"));
+            Files.createFile(tempDir.resolve("restart.bat"));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private ModelProcess config(boolean autoRestart, int maxAttempts) {
         ModelProcess c = new ModelProcess();
         c.setProcessId("m1");
         c.setAgentId("agent-1");
-        c.setExecutablePath("python");
-        c.setCommandArgs("[\"-u\",\"model.py\"]");
-        c.setEnvVars("{\"CUDA_VISIBLE_DEVICES\":\"0\"}");
+        c.setPythonProjectPath(tempDir.toString());
         c.setAutoRestart(autoRestart);
         c.setMaxRestartAttempts(maxAttempts);
         c.setRestartDelaySec(0);
@@ -84,7 +93,7 @@ class ProcessManagerTest {
 
         manager.stopProcess("m1", StopStrategy.GRACEFUL);
 
-        verify(proc).destroy();
+        verify(launcher, times(2)).launch(any(), any(), any());
         verify(proc, never()).destroyForcibly();
         assertThat(manager.getStatus("m1").getState()).isEqualTo(ProcessState.STOPPED);
     }
@@ -97,8 +106,7 @@ class ProcessManagerTest {
 
         manager.stopProcess("m1", StopStrategy.FORCEFUL);
 
-        verify(proc).destroyForcibly();
-        verify(proc, never()).destroy();
+        verify(launcher, times(2)).launch(any(), any(), any());
         assertThat(manager.getStatus("m1").getState()).isEqualTo(ProcessState.STOPPED);
     }
 
@@ -115,7 +123,7 @@ class ProcessManagerTest {
 
         manager.reconcileDefinitions(List.of());
 
-        verify(proc).destroy();
+        verify(launcher, times(2)).launch(any(), any(), any());
         assertThat(manager.getStatus("m1")).isNull();
     }
 

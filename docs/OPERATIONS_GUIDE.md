@@ -133,27 +133,18 @@ INSERT INTO TB_M26_MODEL_PROCESS (
     PROCESS_ID,
     AGENT_ID,
     MODEL_NAME,
-    MODEL_TYPE,
-    EXECUTABLE_PATH,
-    WORKING_DIRECTORY,
-    COMMAND_ARGS,
-    ENV_VARS,
+    PYTHON_PROJECT_PATH,
     AUTO_RESTART,
     MAX_RESTART_ATTEMPTS,
     RESTART_DELAY_SEC,
     HEALTH_CHECK_ENABLED,
     HEALTH_CHECK_INTERVAL_SEC,
-    PROCESS_STATUS,
-    CRASH_COUNT
+    PROCESS_STATUS
 ) VALUES (
     'model-local-01',
     @agent_id,
     'Example Python Model',
-    'RUNTIME',
-    'C:/models/example/start.py',
     'C:/models/example',
-    JSON_ARRAY(),
-    JSON_OBJECT(),
     TRUE,
     3,
     10,
@@ -167,10 +158,8 @@ INSERT INTO TB_M26_MODEL_PROCESS (
 Linux 실행 파일은 예를 들어 다음처럼 등록합니다.
 
 ```sql
-UPDATE TB_M26_MODEL_PROCESS
-SET EXECUTABLE_PATH = '/usr/bin/python3',
-    COMMAND_ARGS = JSON_ARRAY('/opt/models/example/start.py')
-WHERE PROCESS_ID = 'model-local-01';
+-- The project directory must contain run.bat, stop.bat, and restart.bat.
+-- The Agent invokes those scripts directly.
 ```
 
 다음 SQL로 Agent에 할당된 감시 대상이 보이는지 확인합니다.
@@ -179,7 +168,7 @@ WHERE PROCESS_ID = 'model-local-01';
 SELECT PROCESS_ID,
        AGENT_ID,
        MODEL_NAME,
-       EXECUTABLE_PATH,
+       PYTHON_PROJECT_PATH,
        PROCESS_STATUS,
        AUTO_RESTART
 FROM TB_M26_MODEL_PROCESS
@@ -287,8 +276,6 @@ WHERE PROCESS_ID = 'model-local-01';
 ```sql
 SELECT AUTO_RESTART,
        MAX_RESTART_ATTEMPTS,
-       CRASH_COUNT,
-       LAST_CRASH_TIME,
        PROCESS_STATUS
 FROM TB_M26_MODEL_PROCESS
 WHERE PROCESS_ID = 'model-local-01';
@@ -306,8 +293,6 @@ DB에서는 다음을 확인합니다.
 ```sql
 SELECT PROCESS_STATUS,
        PROCESS_PID,
-       CRASH_COUNT,
-       LAST_CRASH_TIME,
        LAST_HEARTBEAT
 FROM TB_M26_MODEL_PROCESS
 WHERE PROCESS_ID = 'model-local-01';
@@ -352,9 +337,9 @@ GROUP BY a.AGENT_ID, a.IP_ADDRESS;
 | --- | --- |
 | Agent 행이 생기지 않음 | DB 접속 환경 변수, `TB_M26_AGENT`, 로그의 `local IPs` |
 | 프로세스가 조회되지 않음 | `TB_M26_MODEL_PROCESS.AGENT_ID`와 현재 Agent ID |
-| 프로세스가 시작되지 않음 | `EXECUTABLE_PATH`, `WORKING_DIRECTORY`, `COMMAND_ARGS` JSON |
+| 프로세스가 시작되지 않음 | `PYTHON_PROJECT_PATH`가 실제 디렉토리이고 `run.bat`가 존재하는지 확인 |
 | 명령이 처리되지 않음 | `TB_M26_COMMAND.COMMAND_STATUS`, `AGENT_ID`, `PROCESS_ID` |
 | heartbeat가 멈춤 | Agent Loop 로그와 `LAST_HEARTBEAT` |
-| 재시작되지 않음 | `AUTO_RESTART`, `MAX_RESTART_ATTEMPTS`, `CRASH_COUNT` |
+| 재시작되지 않음 | `AUTO_RESTART`, `MAX_RESTART_ATTEMPTS`, `restart.bat` 존재 여부 |
 
 가장 먼저 볼 소스 파일은 [AgentMainLoop.java](../src/main/java/com/lra/agent/loop/AgentMainLoop.java)입니다. Agent 등록 방식은 [AgentIdentityResolver.java](../src/main/java/com/lra/agent/identity/AgentIdentityResolver.java), 프로세스 정의는 `TB_M26_MODEL_PROCESS`에서 확인합니다.

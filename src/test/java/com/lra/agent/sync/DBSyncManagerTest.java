@@ -90,7 +90,7 @@ class DBSyncManagerTest {
                         && record.getAgentId().equals(AGENT_ID)
                         && record.getState().equals("RUNNING")
                         && record.getPid() == 1234
-                        && record.getMemoryMb() == 2048));
+                        && record.getUptimeSec() == 120L));
     }
 
     @Test

@@ -12,7 +12,7 @@ WHERE IP_ADDRESS = @local_ip;
 SELECT p.PROCESS_ID,
        p.AGENT_ID,
        p.MODEL_NAME,
-       p.EXECUTABLE_PATH,
+       p.PYTHON_PROJECT_PATH,
        p.PROCESS_STATUS,
        p.PROCESS_PID,
        p.HEALTH_STATUS,

@@ -35,7 +35,6 @@ public final class IntegrationTestHelper {
         config.setProcessId(processId);
         config.setAgentId(agentId);
         config.setModelName("model-" + processId);
-        config.setModelType(modelType);
         config.setAutoRestart(true);
         config.setMaxRestartAttempts(3);
         config.setRestartDelaySec(1);
@@ -50,7 +49,6 @@ public final class IntegrationTestHelper {
         status.setState(state);
         status.setHealthStatus(healthStatus);
         status.setPid(pid);
-        status.setCrashCount(0);
         return status;
     }
 

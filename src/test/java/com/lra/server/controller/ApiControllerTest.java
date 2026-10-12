@@ -170,7 +170,6 @@ class ApiControllerTest {
         process.setProcessId(processId);
         process.setAgentId(agentId);
         process.setModelName("model-" + processId);
-        process.setModelType("INFERENCE");
         modelProcessRepository.save(process);
     }
 
