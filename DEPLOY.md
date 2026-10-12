@@ -30,6 +30,14 @@ reads all connection settings from the environment:
 
 ## Run directly
 
+For a copied project directory, edit the root `start.bat` and set `JAVA_EXE` to the
+Java 21 executable installed on the VM. The script automatically selects the
+executable JAR from `target\` and uses `config\` only when that folder exists.
+
+```bat
+start.bat
+```
+
 ```bash
 # Linux/macOS
 DB_HOST=... DB_USER=... DB_PASSWORD=... DB_NAME=... ./bin/start.sh
