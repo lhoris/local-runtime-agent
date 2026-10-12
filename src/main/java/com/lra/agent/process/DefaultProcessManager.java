@@ -52,10 +52,15 @@ public class DefaultProcessManager implements ProcessManager {
         if (mp.getProcess() == null) {
             mp.setPid(definition.getPid());
             mp.setState(parseState(definition.getState()));
-            if (mp.getPid() != null && mp.isAlive() && mp.getState() != ProcessState.RUNNING) {
+        }
+
+        boolean alive = mp.isAlive();
+        log.info("PID 생존 여부 확인: modelProcessId={}, pid={}, alive={}, 현재상태={}",
+                modelId, mp.getPid(), alive, mp.getState());
+
+        if (mp.getProcess() == null && alive && mp.getState() != ProcessState.RUNNING) {
                 log.info("DB에 저장된 PID {}가 살아 있어 {} 상태를 RUNNING으로 갱신", mp.getPid(), modelId);
                 transition(mp, ProcessState.RUNNING);
-            }
         }
         refresh(mp);
         return toStatus(mp);
