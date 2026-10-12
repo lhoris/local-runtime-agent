@@ -153,6 +153,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
         switch (type) {
             case START -> processManager.startProcess(modelId, requireProcess(modelId));
+            case ATTACH -> processManager.attachExistingProcess(modelId, requireProcess(modelId));
             case STOP -> processManager.stopProcess(modelId, StopStrategy.GRACEFUL);
             case RESTART -> processManager.restartProcess(modelId);
             case PARAM_UPDATE -> {

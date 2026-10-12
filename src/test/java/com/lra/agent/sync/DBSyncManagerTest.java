@@ -112,6 +112,20 @@ class DBSyncManagerTest {
     }
 
     @Test
+    void attachCommandAttachesExistingProcess() {
+        Command cmd = command("cmd-attach", "ATTACH", "model-1");
+        when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
+                .thenReturn(List.of(cmd));
+        when(modelProcessRepository.findById("model-1"))
+                .thenReturn(Optional.of(new ModelProcess()));
+
+        dbSyncManager.pollPendingCommands();
+
+        verify(processManager).attachExistingProcess(eq("model-1"), any(ModelProcess.class));
+        verify(commandRepository).save(argThat(c -> c.getCommandStatus().equals("COMPLETED")));
+    }
+
+    @Test
     void pollPendingCommandsMarksFailedWhenExecutionThrows() {
         Command cmd = command("cmd-1", "START", "model-1");
         when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))

@@ -5,6 +5,7 @@ package com.lra.common.enums;
  */
 public enum CommandType {
     START,
+    ATTACH,
     STOP,
     RESTART,
     PARAM_UPDATE,

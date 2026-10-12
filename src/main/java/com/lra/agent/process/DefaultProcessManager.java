@@ -13,7 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -111,6 +113,33 @@ public class DefaultProcessManager implements ProcessManager {
             log.error("Failed to start process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
         }
+    }
+
+    @Override
+    public void attachExistingProcess(String modelId, ModelProcess definition) {
+        if (definition == null) {
+            throw new IllegalArgumentException("process definition must not be null for " + modelId);
+        }
+
+        ManagedProcess mp = processes.computeIfAbsent(modelId, id -> new ManagedProcess(id, definition));
+        mp.setDefinition(definition);
+        if (mp.isAlive()) {
+            log.info("Process {} is already attached and alive (pid={})", modelId, mp.getPid());
+            return;
+        }
+
+        java.util.Optional<ProcessHandle> match = findMatchingProcess(definition);
+        if (match.isEmpty()) {
+            throw new IllegalStateException(
+                "No running local process matched executable and arguments for " + modelId);
+        }
+
+        ProcessHandle handle = match.get();
+        mp.setProcess(null);
+        mp.setPid(toInt(handle.pid()));
+        mp.setStartTime(handle.info().startInstant().orElse(Instant.now()));
+        transition(mp, ProcessState.RUNNING);
+        log.info("Attached existing process {} to {}", handle.pid(), modelId);
     }
 
     @Override
@@ -217,6 +246,33 @@ public class DefaultProcessManager implements ProcessManager {
         return command;
     }
 
+    private java.util.Optional<ProcessHandle> findMatchingProcess(ModelProcess definition) {
+        String executable = normalize(definition.getExecutablePath());
+        List<String> expectedArgs = parseArgs(definition.getCommandArgs());
+        return ProcessHandle.allProcesses()
+            .filter(handle -> handle.info().command().map(command -> executableMatches(executable, command)).orElse(false))
+            .filter(handle -> argumentsMatch(expectedArgs, handle.info().arguments().orElse(new String[0])))
+            .findFirst();
+    }
+
+    private boolean executableMatches(String expected, String actual) {
+        String normalizedActual = normalize(actual);
+        return normalizedActual.equals(expected)
+            || new File(normalizedActual).getName().equals(new File(expected).getName());
+    }
+
+    private boolean argumentsMatch(List<String> expected, String[] actual) {
+        if (expected.isEmpty()) {
+            return true;
+        }
+        List<String> actualArgs = List.of(actual);
+        return actualArgs.containsAll(expected);
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
+    }
+
     private List<String> parseArgs(String json) {
         if (json == null || json.isBlank()) {
             return List.of();
@@ -300,6 +356,14 @@ public class DefaultProcessManager implements ProcessManager {
                 handle.destroyForcibly();
             } else {
                 handle.destroy();
+                try {
+                    handle.onExit().get(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException | TimeoutException e) {
+                    log.warn("Graceful stop timed out for {}, escalating to forceful kill", mp.getModelId());
+                    handle.destroyForcibly();
+                }
             }
         });
     }

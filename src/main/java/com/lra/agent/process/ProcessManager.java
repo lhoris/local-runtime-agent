@@ -17,6 +17,9 @@ public interface ProcessManager {
     /** Launch the process for {@code modelId} using {@code definition}. */
     void startProcess(String modelId, ModelProcess definition);
 
+    /** Find and attach an already-running local process to this definition. */
+    void attachExistingProcess(String modelId, ModelProcess definition);
+
     /** Terminate the process for {@code modelId} using the given strategy. */
     void stopProcess(String modelId, StopStrategy strategy);
 

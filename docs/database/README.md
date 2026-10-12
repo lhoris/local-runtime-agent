@@ -4,7 +4,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 
 ## Order
 
-1. Review and apply `schema.sql` in MariaDB.
+1. Review and apply `schema.sql` in MariaDB. This is the complete application DDL and does not require Flyway.
 2. Run `verify-schema.sql` against the target database.
 3. Edit and run `seed-local-agent.sql` when you want to preconfigure a process row.
 4. Start the Agent. It automatically creates the `TB_M26_AGENT` row from the local hostname and IP.
