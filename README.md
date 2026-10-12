@@ -81,7 +81,7 @@ SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `SPRING_PROFILES_ACTIVE` | (없음) | 활성 프로필 (`dev`/`prod`/`test`) |
-| `DB_HOST` | `localhost` | MariaDB 11.8 호스트 |
+| `DB_HOST` | `central-db` | MariaDB 11.8 호스트 |
 | `DB_PORT` | `3306` | MariaDB 11.8 포트 |
 | `DB_NAME` | `agent_db` | 데이터베이스명 |
 | `DB_USER` | (필수) | DB 사용자 |

@@ -848,7 +848,7 @@ agent:
 
 spring:
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:agent_db}
+    url: jdbc:mariadb://${DB_HOST:central-db}:${DB_PORT:3306}/${DB_NAME:agent_db}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 

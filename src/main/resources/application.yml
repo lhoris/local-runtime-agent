@@ -3,7 +3,7 @@ spring:
     name: local-runtime-agent
 
   datasource:
-    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:agent_db}?serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mariadb://${DB_HOST:central-db}:${DB_PORT:3306}/${DB_NAME:agent_db}?serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${DB_USER:agent}
     password: ${DB_PASSWORD:agent}
     driver-class-name: org.mariadb.jdbc.Driver
