@@ -21,8 +21,8 @@ reads all connection settings from the environment:
 
 | Variable | Purpose |
 |----------|---------|
-| `DB_HOST`, `DB_PORT`, `DB_NAME` | MariaDB 11.8 connection |
-| `DB_USER`, `DB_PASSWORD` | MariaDB credentials |
+| `DB_URL` | MariaDB JDBC URL (default: `jdbc:mariadb://172.18.86.78:3306/PPWIRE`) |
+| `DB_USERNAME`, `DB_PASSWORD` | MariaDB credentials |
 | `DB_USE_SSL` | Enable SSL for MariaDB (true/false) |
 | `SERVER_PORT` | HTTP port (default 8080) |
 | `TB_M26_AGENT.IP_ADDRESS` | Agent identity is resolved from the local IP address |
@@ -42,11 +42,11 @@ start.bat
 
 ```bash
 # Linux/macOS
-DB_HOST=... DB_USER=... DB_PASSWORD=... DB_NAME=... ./bin/start.sh
+DB_URL=... DB_USERNAME=... DB_PASSWORD=... ./bin/start.sh
 ```
 ```bat
 rem Windows
-set DB_HOST=... & set DB_USER=... & set DB_PASSWORD=... & set DB_NAME=...
+set DB_URL=... & set DB_USERNAME=... & set DB_PASSWORD=...
 bin\start.bat
 ```
 

@@ -1,13 +1,16 @@
 spring:
   datasource:
     # All values must come from the environment in production; no defaults.
-    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSsl=${DB_USE_SSL:false}&requireSsl=${DB_USE_SSL:false}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:mariadb://172.18.86.78:3306/PPWIRE}
+    username: ${DB_USERNAME:ppwiredb1}
+    password: ${DB_PASSWORD:ppwiredb123!@}
     driver-class-name: org.mariadb.jdbc.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_MAX:10}
-      minimum-idle: ${DB_POOL_MIN:2}
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
 
   jpa:
     hibernate:
@@ -17,6 +20,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          fetch_size: 50
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
 
 server:
   port: ${SERVER_PORT:8080}
