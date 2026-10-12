@@ -4,17 +4,19 @@ spring:
 
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:agent_db}?serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    username: ${DB_USER:agent}
+    password: ${DB_PASSWORD:agent}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: none
+    show-sql: true
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
 
 server:
   port: ${SERVER_PORT:8080}
@@ -31,5 +33,6 @@ logging:
   level:
     root: INFO
     com.lra: DEBUG
+    org.hibernate.SQL: DEBUG
   file:
     name: logs/application.log
