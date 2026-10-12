@@ -104,15 +104,13 @@ public class DefaultProcessManager implements ProcessManager {
         try {
             log.info("START 명령 실행: modelProcessId={}, run.bat 호출", modelId);
             Process process = runControlScript(definition, "run.bat");
-            mp.setProcess(process);
-            mp.setStartTime(Instant.now());
-            mp.setPid(toInt(process.pid()));
+            attachStartedPythonProcess(mp, definition, process);
             // RUNNING is confirmed here by liveness; health-gated confirmation is
             // performed later by the monitor/HealthChecker (§7.3 step 4).
-            if (process.isAlive()) {
+            if (mp.isAlive()) {
                 transition(mp, ProcessState.RUNNING);
             } else {
-                log.error("Process {} exited immediately (exit={})", modelId, safeExitValue(process));
+                log.error("Process {} exited immediately (pid={})", modelId, mp.getPid());
                 transition(mp, ProcessState.CRASHED);
             }
         } catch (Exception e) {
@@ -188,10 +186,8 @@ public class DefaultProcessManager implements ProcessManager {
         try {
             log.info("RESTART 명령 실행: modelProcessId={}, restart.bat 호출", modelId);
             Process process = runControlScript(definition, "restart.bat");
-            mp.setProcess(process);
-            mp.setStartTime(Instant.now());
-            mp.setPid(toInt(process.pid()));
-            transition(mp, process.isAlive() ? ProcessState.RUNNING : ProcessState.CRASHED);
+            attachStartedPythonProcess(mp, definition, process);
+            transition(mp, mp.isAlive() ? ProcessState.RUNNING : ProcessState.CRASHED);
         } catch (Exception e) {
             log.error("Failed to restart process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
@@ -295,6 +291,93 @@ public class DefaultProcessManager implements ProcessManager {
             .findFirst();
     }
 
+    /** Store the Python child PID instead of the cmd.exe wrapper PID. */
+    private void attachStartedPythonProcess(ManagedProcess managed,
+                                            ModelProcess definition,
+                                            Process controlProcess) {
+        java.util.Optional<ProcessHandle> python = findPythonProcess(definition, controlProcess);
+        if (python.isPresent()) {
+            ProcessHandle handle = python.get();
+            managed.setProcess(null);
+            managed.setPid(toInt(handle.pid()));
+            managed.setStartTime(handle.info().startInstant().orElse(Instant.now()));
+            log.info("실제 Python 프로세스 연결: modelProcessId={}, pythonPid={}, cmdPid={}",
+                    managed.getModelId(), handle.pid(), controlProcess.pid());
+            return;
+        }
+
+        String command = ProcessHandle.of(controlProcess.pid())
+                .flatMap(handle -> handle.info().command())
+                .orElse("");
+        if (command.isBlank() || !normalize(command).contains("cmd.exe")) {
+            managed.setProcess(controlProcess);
+            managed.setPid(toInt(controlProcess.pid()));
+            managed.setStartTime(Instant.now());
+            return;
+        }
+        throw new IllegalStateException(
+                "run.bat started cmd.exe, but no Python process was found for project: "
+                        + definition.getPythonProjectPath());
+    }
+
+    private java.util.Optional<ProcessHandle> findPythonProcess(ModelProcess definition,
+                                                                  Process controlProcess) {
+        String projectPath = normalize(definition.getPythonProjectPath());
+        ProcessHandle controlHandle = controlProcess.toHandle();
+        if (controlHandle == null) {
+            return java.util.Optional.empty();
+        }
+        for (int attempt = 0; attempt < 10; attempt++) {
+            java.util.Optional<ProcessHandle> child = findDescendant(controlHandle);
+            if (child.isPresent()) {
+                return child;
+            }
+            java.util.Optional<ProcessHandle> matching = findPythonByProjectPath(projectPath);
+            if (matching.isPresent()) {
+                return matching;
+            }
+            sleepMillis(100);
+        }
+        return java.util.Optional.empty();
+    }
+
+    private java.util.Optional<ProcessHandle> findPythonByProjectPath(String projectPath) {
+        return ProcessHandle.allProcesses()
+                .filter(handle -> isPython(handle)
+                        && java.util.Arrays.stream(handle.info().arguments().orElse(new String[0]))
+                        .map(this::normalize)
+                        .anyMatch(argument -> argument.contains(projectPath)))
+                .findFirst();
+    }
+
+    private java.util.Optional<ProcessHandle> findDescendant(ProcessHandle parent) {
+        for (ProcessHandle child : parent.children().toList()) {
+            if (isPython(child)) {
+                return java.util.Optional.of(child);
+            }
+            java.util.Optional<ProcessHandle> descendant = findDescendant(child);
+            if (descendant.isPresent()) {
+                return descendant;
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
+    private void sleepMillis(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private boolean isPython(ProcessHandle handle) {
+        return handle.info().command()
+                .map(this::normalize)
+                .map(command -> command.endsWith("python.exe") || command.endsWith("python3.exe"))
+                .orElse(false);
+    }
+
     private String normalize(String value) {
         return value == null ? "" : value.replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
     }
@@ -321,14 +404,6 @@ public class DefaultProcessManager implements ProcessManager {
 
     private static Integer toInt(long pid) {
         return pid > Integer.MAX_VALUE ? null : (int) pid;
-    }
-
-    private static Integer safeExitValue(Process process) {
-        try {
-            return process.exitValue();
-        } catch (IllegalThreadStateException e) {
-            return null;
-        }
     }
 
     private void stopAliveProcess(ManagedProcess mp, StopStrategy strategy) throws InterruptedException {
