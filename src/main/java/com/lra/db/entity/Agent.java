@@ -36,6 +36,9 @@ public class Agent {
     @Column(name = "INSTALLED_AT")
     private Instant installedAt;
 
+    @Column(name = "WORKED_AT")
+    private Instant workedAt;
+
     public String getAgentId() {
         return agentId;
     }
@@ -82,6 +85,14 @@ public class Agent {
 
     public void setInstalledAt(Instant installedAt) {
         this.installedAt = installedAt;
+    }
+
+    public Instant getWorkedAt() {
+        return workedAt;
+    }
+
+    public void setWorkedAt(Instant workedAt) {
+        this.workedAt = workedAt;
     }
 
     @Override

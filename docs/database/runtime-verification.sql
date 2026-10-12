@@ -10,6 +10,7 @@ SELECT '1_AGENT' AS STEP,
        HOSTNAME,
        IP_ADDRESS,
        INSTALLED_AT,
+       WORKED_AT,
        CASE WHEN IP_ADDRESS = @local_ip THEN '정상' ELSE 'IP 확인 필요' END AS RESULT
 FROM TB_M26_AGENT
 WHERE IP_ADDRESS = @local_ip;

@@ -72,10 +72,9 @@ public class AgentIdentityResolver {
         if (existing.isPresent()) {
             Agent agent = existing.get();
             String currentIp = localIps.get(0);
-            if (!currentIp.equals(agent.getIpAddress())) {
-                agent.setIpAddress(currentIp);
-                agentRepository.save(agent);
-            }
+            agent.setIpAddress(currentIp);
+            agent.setWorkedAt(Instant.now());
+            agentRepository.save(agent);
             return existing;
         }
 
@@ -92,6 +91,7 @@ public class AgentIdentityResolver {
         agent.setHostname(hostname);
         agent.setOsType(System.getProperty("os.name", "unknown"));
         agent.setIpAddress(localIps.get(0));
+        agent.setWorkedAt(Instant.now());
         Agent saved = agentRepository.save(agent);
         log.info("Registered local Agent {} with IP {}", saved.getAgentId(), saved.getIpAddress());
         return Optional.of(saved);
