@@ -74,8 +74,10 @@ public class AgentIdentityResolver {
             String currentIp = localIps.get(0);
             agent.setIpAddress(currentIp);
             agent.setWorkedAt(Instant.now());
-            agentRepository.save(agent);
-            return existing;
+            Agent saved = agentRepository.save(agent);
+            log.info("Agent WORKED_AT updated: agentId={}, workedAt={}, ipAddress={}",
+                    saved.getAgentId(), saved.getWorkedAt(), saved.getIpAddress());
+            return Optional.of(saved);
         }
 
         if (!autoRegister) {
