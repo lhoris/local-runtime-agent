@@ -3,17 +3,41 @@
 -- Review existing tables before applying it to a non-empty database.
 
 CREATE TABLE IF NOT EXISTS TB_M26_AGENT (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     AGENT_ID VARCHAR(64) PRIMARY KEY COMMENT 'Agent unique identifier, generated from local hostname',
     HOSTNAME VARCHAR(256) COMMENT 'Machine hostname',
     OS_TYPE VARCHAR(32) COMMENT 'Operating system name',
     IP_ADDRESS VARCHAR(45) COMMENT 'Local IPv4 address used to identify this Agent',
     SPRING_BOOT_VERSION VARCHAR(32) COMMENT 'Spring Boot version reported by the Agent',
-    INSTALLED_AT TIMESTAMP NULL COMMENT 'First registration timestamp',
-    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Row creation timestamp',
-    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last row update timestamp'
+    INSTALLED_AT TIMESTAMP NULL COMMENT 'First registration timestamp'
 ) COMMENT='Local Runtime Agent registration and network identity';
 
 CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     -- Existing vision-monitor business columns
     PROCESS_ID VARCHAR(64) PRIMARY KEY COMMENT 'Managed process unique identifier',
     PROCESS_AREA_CODE VARCHAR(64) COMMENT 'Existing vision-monitor process area code',
@@ -52,15 +76,26 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     UPTIME_SEC BIGINT COMMENT 'Latest observed process uptime in seconds',
     CRASH_COUNT INT DEFAULT 0 COMMENT 'Number of detected crashes',
     LAST_CRASH_TIME TIMESTAMP NULL COMMENT 'Timestamp of the latest detected crash',
-    ERROR_MESSAGE LONGTEXT COMMENT 'Latest process or health error message',
-    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Row creation timestamp',
-    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last row update timestamp'
+    ERROR_MESSAGE LONGTEXT COMMENT 'Latest process or health error message'
 ) COMMENT='Process definition and latest runtime status for each managed model process';
 
 CREATE INDEX IF NOT EXISTS IDX_M26_MODEL_PROCESS_AGENT
     ON TB_M26_MODEL_PROCESS (AGENT_ID, PROCESS_ID);
 
 CREATE TABLE IF NOT EXISTS TB_M26_COMMAND (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     COMMAND_ID VARCHAR(64) PRIMARY KEY COMMENT 'Command unique identifier',
     AGENT_ID VARCHAR(64) NOT NULL COMMENT 'Target Agent identifier',
     PROCESS_ID VARCHAR(64) COMMENT 'Target process identifier',
@@ -68,27 +103,49 @@ CREATE TABLE IF NOT EXISTS TB_M26_COMMAND (
     COMMAND_STATUS VARCHAR(32) COMMENT 'Command lifecycle status',
     COMMAND_PARAMETERS LONGTEXT COMMENT 'Command parameters as a JSON object',
     PROCESSED_AT TIMESTAMP NULL COMMENT 'Command completion timestamp',
-    FAILED_REASON LONGTEXT COMMENT 'Failure reason when command processing fails',
-    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Command creation timestamp',
-    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last command update timestamp'
+    FAILED_REASON LONGTEXT COMMENT 'Failure reason when command processing fails'
 ) COMMENT='Command queue consumed by local Agents';
 
 CREATE INDEX IF NOT EXISTS IDX_M26_COMMAND_PENDING
     ON TB_M26_COMMAND (AGENT_ID, COMMAND_STATUS);
 
 CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PARAMETER (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     PARAMETER_ID VARCHAR(64) PRIMARY KEY COMMENT 'Parameter unique identifier',
     PROCESS_ID VARCHAR(64) NOT NULL COMMENT 'Target process identifier',
     PARAM_KEY VARCHAR(256) COMMENT 'Parameter name',
     PARAM_VALUE LONGTEXT COMMENT 'Parameter value serialized as text or JSON',
     PARAM_TYPE VARCHAR(32) COMMENT 'Parameter type such as STRING, INTEGER, or JSON',
     PARAM_VERSION INT DEFAULT 1 COMMENT 'Parameter revision number',
-    IS_ACTIVE BOOLEAN DEFAULT TRUE COMMENT 'Whether this parameter is active',
-    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Parameter creation timestamp',
-    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last parameter update timestamp'
+    IS_ACTIVE BOOLEAN DEFAULT TRUE COMMENT 'Whether this parameter is active'
 ) COMMENT='Versioned runtime parameters for managed processes';
 
 CREATE TABLE IF NOT EXISTS TB_M26_EXECUTION_LOG (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     LOG_ID VARCHAR(64) PRIMARY KEY COMMENT 'Execution log unique identifier',
     AGENT_ID VARCHAR(64) COMMENT 'Agent that executed the command',
     PROCESS_ID VARCHAR(64) COMMENT 'Process targeted by the command',
@@ -97,8 +154,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_EXECUTION_LOG (
     EXIT_CODE INT COMMENT 'Operating system exit code',
     STDOUT_PREVIEW TEXT COMMENT 'Truncated standard output preview',
     STDERR_PREVIEW TEXT COMMENT 'Truncated standard error preview',
-    DURATION_SEC INT COMMENT 'Execution duration in seconds',
-    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Execution log creation timestamp'
+    DURATION_SEC INT COMMENT 'Execution duration in seconds'
 ) COMMENT='Historical command execution results';
 
 CREATE INDEX IF NOT EXISTS IDX_M26_EXECUTION_LOG_PROCESS_TIME

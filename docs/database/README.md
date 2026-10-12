@@ -22,5 +22,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
 - `COMMAND_ARGS` and `ENV_VARS` are JSON values.
 
-For an existing vision-monitor database, run `migrate-model-process-for-agent.sql` after taking a backup. Do not use the fresh `CREATE TABLE` definition to replace the existing table.
+All shared tables use the 14-column audit contract: `CREATED_*`, `LAST_UPDATED_*`, and `DATA_END_*`.
+
+For an existing vision-monitor database, run `migrate-model-process-for-agent.sql` and then `migrate-audit-columns.sql` after taking a backup. Do not use the fresh `CREATE TABLE` definition to replace the existing tables.
 - `AUTO_RESTART` and `HEALTH_CHECK_ENABLED` should be stored as boolean-compatible values (`1`/`0`) for MariaDB.
