@@ -72,7 +72,8 @@ public class ModelProcess {
     @Column(name = "HEALTH_CHECK_ENDPOINT", length = 512)
     private String healthCheckEndpoint;
 
-    @Column(name = "PROCESS_STATE", length = 32)
+    // Shared with vision-monitor. Agent writes the latest lifecycle state here.
+    @Column(name = "PROCESS_STATUS", length = 32)
     private String state;
 
     @Column(name = "PROCESS_PID")

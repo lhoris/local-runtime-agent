@@ -14,9 +14,21 @@ CREATE TABLE IF NOT EXISTS TB_M26_AGENT (
 ) COMMENT='Local Runtime Agent registration and network identity';
 
 CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
+    -- Existing vision-monitor business columns
     PROCESS_ID VARCHAR(64) PRIMARY KEY COMMENT 'Managed process unique identifier',
-    AGENT_ID VARCHAR(64) NOT NULL COMMENT 'Agent responsible for this process',
+    PROCESS_AREA_CODE VARCHAR(64) COMMENT 'Existing vision-monitor process area code',
     MODEL_NAME VARCHAR(256) COMMENT 'Human-readable model or process name',
+    AUTOMATION_NAME VARCHAR(256) COMMENT 'Existing vision-monitor automation name',
+    SERVER_IP VARCHAR(45) COMMENT 'Existing server IP for the process',
+    PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'Existing Python project path',
+    PROCESS_STATUS VARCHAR(32) COMMENT 'Shared process lifecycle status',
+    MONITORING_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor monitoring status',
+    CONTROL_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor control status',
+    LAST_STATUS_TIMESTAMP TIMESTAMP NULL COMMENT 'Existing latest status timestamp',
+    DESCRIPTION LONGTEXT COMMENT 'Existing process description',
+
+    -- Agent ownership and execution columns
+    AGENT_ID VARCHAR(64) NOT NULL COMMENT 'Agent responsible for this process',
     MODEL_TYPE VARCHAR(64) COMMENT 'Process category such as INFERENCE or RUNTIME',
     EXECUTABLE_PATH VARCHAR(512) COMMENT 'Executable or interpreter path',
     WORKING_DIRECTORY VARCHAR(512) COMMENT 'Working directory for the process',
@@ -31,7 +43,6 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     HEALTH_CHECK_ENABLED BOOLEAN DEFAULT TRUE COMMENT 'Whether health checks are enabled',
     HEALTH_CHECK_INTERVAL_SEC INT DEFAULT 30 COMMENT 'Health check interval in seconds',
     HEALTH_CHECK_ENDPOINT VARCHAR(512) COMMENT 'Optional local health endpoint',
-    PROCESS_STATE VARCHAR(32) COMMENT 'Latest lifecycle state of the process',
     PROCESS_PID INT COMMENT 'Latest operating system process ID',
     CPU_PERCENT DECIMAL(5,2) COMMENT 'Latest observed CPU usage percentage',
     MEMORY_MB INT COMMENT 'Latest observed memory usage in megabytes',
