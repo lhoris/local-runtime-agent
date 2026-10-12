@@ -4,7 +4,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 
 ## Order
 
-1. Review and apply `schema.sql` in MariaDB. This is the complete application DDL and does not require Flyway.
+1. Review and apply `schema.sql` in MariaDB. This is the complete application DDL and does not require Flyway. For a disposable local database, use `schema-reset.sql` to drop and recreate all Agent tables.
 2. Run `verify-schema.sql` against the target database.
 3. Edit and run `seed-local-agent.sql` when you want to preconfigure a process row.
 4. Start the Agent. It automatically creates the `TB_M26_AGENT` row from the local hostname and IP.
@@ -21,7 +21,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `AGENT_ID` is generated from the local hostname; it does not need to be configured in application properties.
 - `TB_M26_MODEL_PROCESS.AGENT_ID` assigns a process to an Agent.
 - `TB_M26_MODEL_PROCESS.MODEL_PROCESS_ID` is the shared vision-monitor primary key.
-- `TB_M26_COMMAND.PROCESS_ID` is the command/API target value and contains the model process ID as text.
+- `TB_M26_COMMAND.MODEL_PROCESS_ID` is the command target value and contains the model process ID as text.
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
 - `PYTHON_PROJECT_PATH` points to a project directory containing `run.bat`, `stop.bat`, and `restart.bat`.
 

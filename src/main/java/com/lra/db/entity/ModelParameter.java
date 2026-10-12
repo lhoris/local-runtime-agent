@@ -26,7 +26,7 @@ public class ModelParameter {
     private String paramId;
 
     @NotBlank
-    @Column(name = "PROCESS_ID", length = 64, nullable = false)
+    @Column(name = "MODEL_PROCESS_ID", length = 64, nullable = false)
     private String processId;
 
     @Column(name = "PARAM_KEY", length = 256)
@@ -120,4 +120,3 @@ public class ModelParameter {
         return Objects.hashCode(paramId);
     }
 }
-

@@ -29,7 +29,7 @@ public class Command {
     @Column(name = "AGENT_ID", length = 64, nullable = false)
     private String agentId;
 
-    @Column(name = "PROCESS_ID", length = 64)
+    @Column(name = "MODEL_PROCESS_ID", length = 64)
     private String processId;
 
     @Column(name = "COMMAND_TYPE", length = 32)

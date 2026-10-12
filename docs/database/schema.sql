@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_COMMAND (
     DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     COMMAND_ID VARCHAR(64) PRIMARY KEY COMMENT 'Command unique identifier',
     AGENT_ID VARCHAR(64) NOT NULL COMMENT 'Target Agent identifier',
-    PROCESS_ID VARCHAR(64) COMMENT 'Target process identifier',
+    MODEL_PROCESS_ID VARCHAR(64) COMMENT 'Target model process identifier',
     COMMAND_TYPE VARCHAR(32) COMMENT 'Command type such as START, STOP, or RESTART',
     COMMAND_STATUS VARCHAR(32) COMMENT 'Command lifecycle status',
     COMMAND_PARAMETERS LONGTEXT COMMENT 'Command parameters as a JSON object',
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PARAMETER (
     DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
     DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     PARAMETER_ID VARCHAR(64) PRIMARY KEY COMMENT 'Parameter unique identifier',
-    PROCESS_ID VARCHAR(64) NOT NULL COMMENT 'Target process identifier',
+    MODEL_PROCESS_ID VARCHAR(64) NOT NULL COMMENT 'Target model process identifier',
     PARAM_KEY VARCHAR(256) COMMENT 'Parameter name',
     PARAM_VALUE LONGTEXT COMMENT 'Parameter value serialized as text or JSON',
     PARAM_TYPE VARCHAR(32) COMMENT 'Parameter type such as STRING, INTEGER, or JSON',
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_EXECUTION_LOG (
     DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
     LOG_ID VARCHAR(64) PRIMARY KEY COMMENT 'Execution log unique identifier',
     AGENT_ID VARCHAR(64) COMMENT 'Agent that executed the command',
-    PROCESS_ID VARCHAR(64) COMMENT 'Process targeted by the command',
+    MODEL_PROCESS_ID VARCHAR(64) COMMENT 'Model process targeted by the command',
     COMMAND_TYPE VARCHAR(32) COMMENT 'Executed command type',
     EXECUTION_STATUS VARCHAR(32) COMMENT 'Execution result status',
     EXIT_CODE INT COMMENT 'Operating system exit code',
@@ -145,4 +145,4 @@ CREATE TABLE IF NOT EXISTS TB_M26_EXECUTION_LOG (
 ) COMMENT='Historical command execution results';
 
 CREATE INDEX IF NOT EXISTS IDX_M26_EXECUTION_LOG_PROCESS_TIME
-    ON TB_M26_EXECUTION_LOG (PROCESS_ID, CREATED_TIMESTAMP);
+    ON TB_M26_EXECUTION_LOG (MODEL_PROCESS_ID, CREATED_TIMESTAMP);
