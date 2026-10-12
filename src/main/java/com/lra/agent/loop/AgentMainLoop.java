@@ -63,12 +63,14 @@ public class AgentMainLoop {
         long startedAt = System.currentTimeMillis();
         log.info("Agent loop cycle started");
 
+        log.info("Agent loop [1/7] resolving local Agent from IP address");
         Optional<String> agentId = agentIdentityResolver.resolveOrRegisterCurrentAgentId();
         if (agentId.isEmpty()) {
             log.warn("Agent loop skipped: local Agent could not be resolved or registered");
             return;
         }
 
+        log.info("Agent loop [2/7] loading model processes for agent {}", agentId.get());
         Optional<List<ModelProcess>> loadedProcesses = loadProcessDefinitionsFromDb(agentId.get());
         if (loadedProcesses.isEmpty()) {
             log.warn("Agent loop skipped: model process query failed for agent {}", agentId.get());
@@ -76,22 +78,29 @@ public class AgentMainLoop {
         }
 
         List<ModelProcess> processes = loadedProcesses.get();
+        log.info("Agent loop monitoring {} model process(es) for agent {}", processes.size(), agentId.get());
+        log.info("Agent loop [3/7] reconciling configured processes with local runtime");
         processManager.reconcileDefinitions(processes);
         List<ProcessStatus> statuses = checkManagedProcessSafety(processes);
+        log.info("Agent loop [4/7] running health checks for {} process(es)", statuses.size());
         healthCheckRunningProcesses(statuses);
+        log.info("Agent loop [5/7] detecting crashed or unsafe processes");
         detectUnsafeProcesses(statuses);
+        log.info("Agent loop [6/7] recovering crashed processes and polling commands");
         recoverCrashedProcesses();
         pollPendingCommands();
+        log.info("Agent loop [7/7] synchronizing process status and heartbeat to database");
         publishCurrentStatus();
 
-        log.info("Agent loop cycle completed in {} ms", System.currentTimeMillis() - startedAt);
+        log.info("Agent loop cycle completed: agent={}, monitoredProcesses={}, durationMs={}",
+                agentId.get(), statuses.size(), System.currentTimeMillis() - startedAt);
     }
 
     /** Step 1: read the processes this agent is responsible for supervising. */
     private Optional<List<ModelProcess>> loadProcessDefinitionsFromDb(String agentId) {
         try {
             List<ModelProcess> definitions = modelProcessRepository.findByAgentId(agentId);
-            log.debug("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
+            log.info("Loaded {} model process definition(s) for agent {}", definitions.size(), agentId);
             return Optional.of(definitions);
         } catch (RuntimeException ex) {
             log.warn("Loading model process definitions failed", ex);
@@ -106,7 +115,8 @@ public class AgentMainLoop {
             try {
                 ProcessStatus status = processManager.checkStatus(process);
                 if (status != null) {
-                    log.debug("Process {} state: {}", status.getModelId(), status.getState());
+                    log.info("Process check: modelProcessId={}, modelName={}, state={}, pid={}",
+                            status.getModelId(), process.getModelName(), status.getState(), status.getPid());
                     statuses.add(status);
                 }
             } catch (RuntimeException ex) {
