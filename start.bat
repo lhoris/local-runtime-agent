@@ -2,6 +2,9 @@
 rem Run the executable Agent JAR from the copied project directory.
 setlocal
 
+rem Keep Korean application logs readable in the Windows console.
+chcp 65001 >nul
+
 rem Set this to the Java executable installed on the VM.
 set "JAVA_EXE=C:\Program Files\Java\jdk-21\bin\java.exe"
 set "PROJECT_HOME=%~dp0"
@@ -28,7 +31,7 @@ if exist "%PROJECT_HOME%config\" set "CONFIG_ARG=--spring.config.additional-loca
 echo Starting Local Runtime Agent...
 echo Java: %JAVA_EXE%
 echo JAR:  %JAR%
-"%JAVA_EXE%" %JAVA_OPTS% -jar "%JAR%" %CONFIG_ARG% %*
+"%JAVA_EXE%" %JAVA_OPTS% -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar "%JAR%" %CONFIG_ARG% %*
 set "EXIT_CODE=%ERRORLEVEL%"
 echo Local Runtime Agent stopped with exit code %EXIT_CODE%.
 exit /b %EXIT_CODE%
