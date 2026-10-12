@@ -338,7 +338,7 @@ GROUP BY a.AGENT_ID, a.IP_ADDRESS;
 | Agent 행이 생기지 않음 | DB 접속 환경 변수, `TB_M26_AGENT`, 로그의 `local IPs` |
 | 프로세스가 조회되지 않음 | `TB_M26_MODEL_PROCESS.AGENT_ID`와 현재 Agent ID |
 | 프로세스가 시작되지 않음 | `PYTHON_PROJECT_PATH`가 실제 디렉토리이고 `run.bat`가 존재하는지 확인 |
-| 명령이 처리되지 않음 | `TB_M26_COMMAND.COMMAND_STATUS`, `AGENT_ID`, `PROCESS_ID` |
+| 명령이 처리되지 않음 | `TB_M26_COMMAND.COMMAND_STATUS`, `AGENT_ID`, `MODEL_PROCESS_ID` |
 | heartbeat가 멈춤 | Agent Loop 로그와 `LAST_HEARTBEAT` |
 | 재시작되지 않음 | `AUTO_RESTART`, `MAX_RESTART_ATTEMPTS`, `restart.bat` 존재 여부 |
 

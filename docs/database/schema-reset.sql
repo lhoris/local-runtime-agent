@@ -13,5 +13,6 @@ DROP TABLE IF EXISTS TB_M26_AGENT;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- Run this file from the MariaDB client after the DROP statements:
+-- Run this file from the MariaDB client or DBeaver MariaDB script mode.
+-- The SOURCE command executes the complete CREATE TABLE DDL below.
 SOURCE docs/database/schema.sql;
