@@ -78,9 +78,11 @@ public class DefaultDBSyncManager implements DBSyncManager {
     public void syncAgentStatus() {
         String agentId = currentAgentIdOrNull();
         if (agentId == null) {
+            log.warn("상태 동기화 중단: 현재 로컬 Agent를 찾을 수 없음");
             return;
         }
         List<ProcessStatus> statuses = processManager.getAllStatus();
+        log.info("프로세스 상태 DB 동기화 시작: agent={}, processCount={}", agentId, statuses.size());
         Instant now = Instant.now();
         for (ProcessStatus status : statuses) {
             ModelProcess record = modelProcessRepository.findById(parseModelProcessId(status.getModelId()))
@@ -96,29 +98,38 @@ public class DefaultDBSyncManager implements DBSyncManager {
             record.setLastHealthCheck(now);
             record.setLastHeartbeat(now);
             modelProcessRepository.save(record);
+            log.info("프로세스 상태 DB 저장 완료: modelProcessId={}, state={}, pid={}, healthStatus={}",
+                    status.getModelId(), status.getState(), status.getPid(), status.getHealthStatus());
         }
+        log.info("프로세스 상태 DB 동기화 완료: agent={}", agentId);
     }
 
     @Override
     public void pollPendingCommands() {
         String agentId = currentAgentIdOrNull();
         if (agentId == null) {
+            log.warn("명령 조회 중단: 현재 로컬 Agent를 찾을 수 없음");
             return;
         }
         List<Command> commands = commandRepository.findByAgentIdAndCommandStatus(
                 agentId, CommandStatus.PENDING.name());
+        log.info("PENDING 명령 조회 완료: agent={}, commandCount={}", agentId, commands.size());
 
         for (Command cmd : commands) {
             long startMillis = System.currentTimeMillis();
+            log.info("명령 처리 시작: commandId={}, type={}, modelProcessId={}",
+                    cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
             try {
                 ExecutionResult result = executeCommand(cmd);
                 cmd.setCommandStatus(CommandStatus.COMPLETED.name());
                 cmd.setProcessedAt(Instant.now());
                 commandRepository.save(cmd);
                 logExecution(result);
+                log.info("명령 처리 완료: commandId={}, type={}, modelProcessId={}, status=COMPLETED",
+                        cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
             } catch (Exception e) {
-                log.warn("Command {} ({}) failed: {}",
-                        cmd.getCommandId(), cmd.getCommandType(), e.getMessage());
+                log.warn("명령 처리 실패: commandId={}, type={}, modelProcessId={}, reason={}",
+                        cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId(), e.getMessage());
                 cmd.setCommandStatus(CommandStatus.FAILED.name());
                 cmd.setProcessedAt(Instant.now());
                 cmd.setFailedReason(e.getMessage());
@@ -128,6 +139,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 logExecution(ExecutionResult.failure(
                         cmd.getCommandId(), cmd.getProcessId(),
                         parseCommandTypeOrNull(cmd.getCommandType()), e.getMessage(), durationSec));
+                log.info("명령 실패 상태 저장 완료: commandId={}, status=FAILED", cmd.getCommandId());
             }
         }
     }
@@ -145,12 +157,15 @@ public class DefaultDBSyncManager implements DBSyncManager {
         entry.setStderrPreview(truncate(result.getStderrPreview()));
         entry.setDurationSec(result.getDurationSec());
         executionLogRepository.save(entry);
+        log.info("명령 실행 이력 저장 완료: logId={}, type={}, modelProcessId={}, status={}",
+                entry.getLogId(), entry.getCommandType(), entry.getProcessId(), entry.getExecutionStatus());
     }
 
     private ExecutionResult executeCommand(Command cmd) throws Exception {
         long startMillis = System.currentTimeMillis();
         CommandType type = parseCommandType(cmd.getCommandType());
         String modelId = cmd.getProcessId();
+        log.info("명령 실행 분기: type={}, modelProcessId={}", type, modelId);
 
         switch (type) {
             case START -> processManager.startProcess(modelId, requireProcess(modelId));

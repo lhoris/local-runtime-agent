@@ -102,6 +102,7 @@ public class DefaultProcessManager implements ProcessManager {
 
         transition(mp, ProcessState.STARTING);
         try {
+            log.info("START 명령 실행: modelProcessId={}, run.bat 호출", modelId);
             Process process = runControlScript(definition, "run.bat");
             mp.setProcess(process);
             mp.setStartTime(Instant.now());
@@ -157,6 +158,7 @@ public class DefaultProcessManager implements ProcessManager {
         transition(mp, ProcessState.STOPPING);
         try {
             if (mp.getDefinition() != null) {
+                log.info("STOP 명령 실행: modelProcessId={}, stop.bat 호출", modelId);
                 runControlScript(mp.getDefinition(), "stop.bat");
             } else {
                 stopAliveProcess(mp, strategy);
@@ -184,6 +186,7 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
         try {
+            log.info("RESTART 명령 실행: modelProcessId={}, restart.bat 호출", modelId);
             Process process = runControlScript(definition, "restart.bat");
             mp.setProcess(process);
             mp.setStartTime(Instant.now());
@@ -279,6 +282,7 @@ public class DefaultProcessManager implements ProcessManager {
         if (!script.isFile()) {
             throw new IllegalStateException("Required control script is missing: " + script);
         }
+        log.info("제어 스크립트 실행: script={}, workingDirectory={}", script.getName(), directory);
         return launcher.launch(controlScriptCommand(scriptName), directory, Map.of());
     }
 
