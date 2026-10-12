@@ -33,6 +33,8 @@ reads all connection settings from the environment:
 For a copied project directory, edit the root `start.bat` and set `JAVA_EXE` to the
 Java 21 executable installed on the VM. The script automatically selects the
 executable JAR from `target\` and uses `config\` only when that folder exists.
+Set `AGENT_IP_ADDRESS` in `start.bat` to the IP assigned to the adapter with the
+default gateway. The script passes it to the JAR as `--agent.ip-address=...`.
 
 ```bat
 start.bat

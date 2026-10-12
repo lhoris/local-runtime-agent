@@ -7,6 +7,7 @@ import java.util.Enumeration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,12 +20,16 @@ public class LocalIpResolver {
 
     private static final Logger log = LoggerFactory.getLogger(LocalIpResolver.class);
 
+    @Value("${agent.ip-address:}")
+    private String configuredIpAddress;
+
     public Optional<String> resolve() {
         return resolveAll().stream().findFirst();
     }
 
     public List<String> resolveAll() {
         List<String> addresses = new ArrayList<>();
+        addConfiguredAddress(addresses);
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces != null && interfaces.hasMoreElements()) {
@@ -56,6 +61,23 @@ public class LocalIpResolver {
             }
         }
         return addresses.stream().distinct().toList();
+    }
+
+    private void addConfiguredAddress(List<String> addresses) {
+        if (configuredIpAddress == null || configuredIpAddress.isBlank()) {
+            return;
+        }
+        String value = configuredIpAddress.trim();
+        try {
+            InetAddress address = InetAddress.getByName(value);
+            if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
+                addresses.add(address.getHostAddress());
+            } else {
+                log.warn("Configured Agent IP is not a usable IPv4 address: {}", value);
+            }
+        } catch (Exception ex) {
+            log.warn("Configured Agent IP could not be resolved: {}", value, ex);
+        }
     }
 
     public Optional<String> resolveHostname() {

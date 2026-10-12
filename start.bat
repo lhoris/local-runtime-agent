@@ -7,6 +7,9 @@ chcp 65001 >nul
 
 rem Set this to the Java executable installed on the VM.
 set "JAVA_EXE=D:\ws\JDK\jdk-21.0.2\bin\java.exe"
+rem Set this to the IP on the adapter connected to the default gateway.
+set "AGENT_IP_ADDRESS="
+rem Example: set "AGENT_IP_ADDRESS=172.18.0.10"
 set "PROJECT_HOME=%~dp0"
 set "JAR="
 
@@ -27,11 +30,13 @@ if not defined JAR (
 
 set "CONFIG_ARG="
 if exist "%PROJECT_HOME%config\" set "CONFIG_ARG=--spring.config.additional-location=file:%PROJECT_HOME%config\"
+set "AGENT_IP_ARG="
+if defined AGENT_IP_ADDRESS set "AGENT_IP_ARG=--agent.ip-address=%AGENT_IP_ADDRESS%"
 
 echo Starting Local Runtime Agent...
 echo Java: %JAVA_EXE%
 echo JAR:  %JAR%
-"%JAVA_EXE%" %JAVA_OPTS% -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar "%JAR%" %CONFIG_ARG% %*
+"%JAVA_EXE%" %JAVA_OPTS% -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -jar "%JAR%" %CONFIG_ARG% %AGENT_IP_ARG% %*
 set "EXIT_CODE=%ERRORLEVEL%"
 echo Local Runtime Agent stopped with exit code %EXIT_CODE%.
 exit /b %EXIT_CODE%
