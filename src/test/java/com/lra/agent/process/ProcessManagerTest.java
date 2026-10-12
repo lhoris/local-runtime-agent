@@ -33,9 +33,10 @@ class ProcessManagerTest {
         manager = new DefaultProcessManager(launcher);
         monitor = new DefaultProcessMonitor(manager);
         try {
-            Files.createFile(tempDir.resolve("run.bat"));
+            Files.createFile(tempDir.resolve("start.bat"));
             Files.createFile(tempDir.resolve("stop.bat"));
             Files.createFile(tempDir.resolve("restart.bat"));
+            Files.createFile(tempDir.resolve("custom1.bat"));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -70,6 +71,18 @@ class ProcessManagerTest {
         ProcessStatus status = manager.getStatus("m1");
         assertThat(status.getState()).isEqualTo(ProcessState.RUNNING);
         assertThat(status.getPid()).isEqualTo(1234);
+    }
+
+    @Test
+    void customControlCommandExecutesNamedBatchFile() throws Exception {
+        Process proc = aliveProcess(1234L);
+        when(launcher.launch(any(), any(), any())).thenReturn(proc);
+
+        manager.executeControlCommand("m1", config(true, 3), "CUSTOM1");
+
+        verify(launcher).launch(
+                org.mockito.ArgumentMatchers.argThat(command -> command.contains("custom1.bat")),
+                any(), any());
     }
 
     @Test

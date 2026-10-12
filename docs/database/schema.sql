@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     MODEL_NAME VARCHAR(256) COMMENT 'Human-readable model or process name',
     AUTOMATION_NAME VARCHAR(256) COMMENT 'Existing vision-monitor automation name',
     SERVER_IP VARCHAR(45) COMMENT 'Existing server IP for the process',
-    PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'Python project directory containing run.bat, stop.bat, and restart.bat',
+    PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'Python project directory containing start.bat, stop.bat, and restart.bat',
     PROCESS_STATUS VARCHAR(32) COMMENT 'Shared process lifecycle status',
     MONITORING_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor monitoring status',
     CONTROL_STATUS VARCHAR(32) COMMENT 'Existing vision-monitor control status',
@@ -68,6 +68,35 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     ERROR_MESSAGE LONGTEXT COMMENT 'Latest process or health error message'
 ) COMMENT='Process definition and latest runtime status for each managed model process';
 
+
+CREATE TABLE IF NOT EXISTS TB_M26_MODEL_COMMAND (
+    CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',
+    CREATED_OBJECT_ID VARCHAR(22) COMMENT 'Creation object identifier',
+    CREATED_PROGRAM_ID VARCHAR(22) COMMENT 'Creation program identifier',
+    CREATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+    LAST_UPDATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Last update object type',
+    LAST_UPDATED_OBJECT_ID VARCHAR(22) COMMENT 'Last update object identifier',
+    LAST_UPDATED_PROGRAM_ID VARCHAR(22) COMMENT 'Last update program identifier',
+    LAST_UPDATED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+    DATA_END_STATUS VARCHAR(1) DEFAULT 'N' COMMENT 'Data end status',
+    DATA_END_OBJECT_TYPE VARCHAR(1) COMMENT 'Data end object type',
+    DATA_END_OBJECT_ID VARCHAR(22) COMMENT 'Data end object identifier',
+    DATA_END_PROGRAM_ID VARCHAR(22) COMMENT 'Data end program identifier',
+    DATA_END_TIMESTAMP TIMESTAMP NULL COMMENT 'Data end timestamp',
+    MODEL_COMMAND_ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Model command identifier',
+    MODEL_PROCESS_ID BIGINT UNSIGNED NOT NULL COMMENT 'Target model process identifier',
+    TARGET_SERVER_IP VARCHAR(45) NOT NULL COMMENT 'Target Agent server IP',
+    COMMAND_TYPE VARCHAR(20) NOT NULL COMMENT 'Command type such as START, STOP, or RESTART',
+    COMMAND_STATUS VARCHAR(20) NOT NULL DEFAULT 'REQUESTED' COMMENT 'Command lifecycle status',
+    REQUESTED_BY VARCHAR(100) NOT NULL COMMENT 'User or system that requested the command',
+    REQUESTED_TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Command request timestamp',
+    CLAIMED_TIMESTAMP TIMESTAMP NULL COMMENT 'Agent claim timestamp',
+    PROCESSED_TIMESTAMP TIMESTAMP NULL COMMENT 'Command completion timestamp',
+    AGENT_ID VARCHAR(100) COMMENT 'Agent that claimed the command',
+    RESULT_CODE VARCHAR(50) COMMENT 'Execution result code',
+    RESULT_MESSAGE VARCHAR(2000) COMMENT 'Execution result message',
+    RETRY_COUNT INT NOT NULL DEFAULT 0 COMMENT 'Retry count'
+) COMMENT='Model process command queue consumed by local Agents';
 
 CREATE TABLE IF NOT EXISTS TB_M26_COMMAND (
     CREATED_OBJECT_TYPE VARCHAR(1) COMMENT 'Creation object type',

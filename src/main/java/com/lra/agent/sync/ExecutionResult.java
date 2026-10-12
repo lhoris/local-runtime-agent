@@ -10,7 +10,7 @@ public class ExecutionResult {
 
     private final String commandId;
     private final String modelId;
-    private final CommandType commandType;
+    private final String commandType;
     private final ExecutionStatus status;
     private final Integer exitCode;
     private final String stdoutPreview;
@@ -20,6 +20,24 @@ public class ExecutionResult {
     public ExecutionResult(String commandId,
                            String modelId,
                            CommandType commandType,
+                           ExecutionStatus status,
+                           Integer exitCode,
+                           String stdoutPreview,
+                           String stderrPreview,
+                           Integer durationSec) {
+        this.commandId = commandId;
+        this.modelId = modelId;
+        this.commandType = commandType == null ? null : commandType.name();
+        this.status = status;
+        this.exitCode = exitCode;
+        this.stdoutPreview = stdoutPreview;
+        this.stderrPreview = stderrPreview;
+        this.durationSec = durationSec;
+    }
+
+    public ExecutionResult(String commandId,
+                           String modelId,
+                           String commandType,
                            ExecutionStatus status,
                            Integer exitCode,
                            String stdoutPreview,
@@ -43,6 +61,14 @@ public class ExecutionResult {
                 ExecutionStatus.SUCCESS, 0, null, null, durationSec);
     }
 
+    public static ExecutionResult success(String commandId,
+                                          String modelId,
+                                          String commandType,
+                                          int durationSec) {
+        return new ExecutionResult(commandId, modelId, commandType,
+                ExecutionStatus.SUCCESS, 0, null, null, durationSec);
+    }
+
     public static ExecutionResult failure(String commandId,
                                           String modelId,
                                           CommandType commandType,
@@ -60,7 +86,7 @@ public class ExecutionResult {
         return modelId;
     }
 
-    public CommandType getCommandType() {
+    public String getCommandType() {
         return commandType;
     }
 

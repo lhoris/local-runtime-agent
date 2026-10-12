@@ -8,11 +8,14 @@ import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.process.StopStrategy;
 import com.lra.common.enums.CommandStatus;
 import com.lra.common.enums.CommandType;
+import com.lra.db.entity.Agent;
 import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.Command;
+import com.lra.db.entity.ModelCommand;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
+import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +49,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     private final ProcessManager processManager;
     private final ModelProcessRepository modelProcessRepository;
     private final CommandRepository commandRepository;
+    private final ModelCommandRepository modelCommandRepository;
     private final ExecutionLogRepository executionLogRepository;
 
     private HealthChecker healthChecker;
@@ -55,11 +59,13 @@ public class DefaultDBSyncManager implements DBSyncManager {
                                 ProcessManager processManager,
                                 ModelProcessRepository modelProcessRepository,
                                 CommandRepository commandRepository,
+                                ModelCommandRepository modelCommandRepository,
                                 ExecutionLogRepository executionLogRepository) {
         this.agentIdentityResolver = agentIdentityResolver;
         this.processManager = processManager;
         this.modelProcessRepository = modelProcessRepository;
         this.commandRepository = commandRepository;
+        this.modelCommandRepository = modelCommandRepository;
         this.executionLogRepository = executionLogRepository;
     }
 
@@ -106,6 +112,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     @Override
     public void pollPendingCommands() {
+        if (sharedCommandQueueEnabled()) {
+            pollSharedModelCommands();
+            return;
+        }
         String agentId = currentAgentIdOrNull();
         if (agentId == null) {
             log.warn("명령 조회 중단: 현재 로컬 Agent를 찾을 수 없음");
@@ -150,7 +160,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
         entry.setLogId(UUID.randomUUID().toString());
         entry.setAgentId(currentAgentIdOrNull());
         entry.setProcessId(result.getModelId());
-        entry.setCommandType(result.getCommandType() != null ? result.getCommandType().name() : null);
+        entry.setCommandType(result.getCommandType());
         entry.setExecutionStatus(result.getStatus() != null ? result.getStatus().name() : null);
         entry.setExitCode(result.getExitCode());
         entry.setStdoutPreview(truncate(result.getStdoutPreview()));
@@ -159,6 +169,63 @@ public class DefaultDBSyncManager implements DBSyncManager {
         executionLogRepository.save(entry);
         log.info("명령 실행 이력 저장 완료: logId={}, type={}, modelProcessId={}, status={}",
                 entry.getLogId(), entry.getCommandType(), entry.getProcessId(), entry.getExecutionStatus());
+    }
+
+    private boolean sharedCommandQueueEnabled() {
+        return modelCommandRepository != null;
+    }
+
+    private void pollSharedModelCommands() {
+        Agent agent = currentAgentOrNull();
+        if (agent == null || agent.getIpAddress() == null || agent.getIpAddress().isBlank()) {
+            log.warn("Command polling skipped: current Agent or IP is unavailable");
+            return;
+        }
+        List<ModelCommand> commands = modelCommandRepository
+                .findByTargetServerIpAndCommandStatusOrderByRequestedTimestampAsc(
+                        agent.getIpAddress(), "REQUESTED");
+        for (ModelCommand command : commands) {
+            long startMillis = System.currentTimeMillis();
+            command.setCommandStatus("PROCESSING");
+            command.setAgentId(agent.getAgentId());
+            command.setClaimedTimestamp(Instant.now());
+            modelCommandRepository.save(command);
+            try {
+                ExecutionResult result = executeSharedCommand(command);
+                command.setCommandStatus("COMPLETED");
+                command.setProcessedTimestamp(Instant.now());
+                command.setResultCode("SUCCESS");
+                modelCommandRepository.save(command);
+                safeLogExecution(result);
+            } catch (Exception ex) {
+                command.setCommandStatus("FAILED");
+                command.setProcessedTimestamp(Instant.now());
+                command.setResultCode("FAILURE");
+                command.setResultMessage(ex.getMessage());
+                modelCommandRepository.save(command);
+                int durationSec = (int) ((System.currentTimeMillis() - startMillis) / 1000);
+                safeLogExecution(ExecutionResult.failure(
+                        command.getCommandId(), command.getProcessId(),
+                        parseCommandTypeOrNull(command.getCommandType()), ex.getMessage(), durationSec));
+            }
+        }
+    }
+
+    private ExecutionResult executeSharedCommand(ModelCommand command) throws Exception {
+        long startMillis = System.currentTimeMillis();
+        String type = command.getCommandType();
+        String modelId = command.getProcessId();
+        processManager.executeControlCommand(modelId, requireProcess(modelId), type);
+        int durationSec = (int) ((System.currentTimeMillis() - startMillis) / 1000);
+        return ExecutionResult.success(command.getCommandId(), modelId, type, durationSec);
+    }
+
+    private void safeLogExecution(ExecutionResult result) {
+        try {
+            logExecution(result);
+        } catch (RuntimeException ex) {
+            log.warn("Execution log persistence failed after command processing", ex);
+        }
     }
 
     private ExecutionResult executeCommand(Command cmd) throws Exception {
@@ -247,6 +314,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     private String currentAgentIdOrNull() {
         return agentIdentityResolver.resolveOrRegisterCurrentAgentId().orElse(null);
+    }
+
+    private Agent currentAgentOrNull() {
+        return agentIdentityResolver.resolveOrRegisterCurrentAgent().orElse(null);
     }
 
     private String truncate(String value) {

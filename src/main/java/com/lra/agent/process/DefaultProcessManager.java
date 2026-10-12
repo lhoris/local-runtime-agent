@@ -104,7 +104,7 @@ public class DefaultProcessManager implements ProcessManager {
         transition(mp, ProcessState.STARTING);
         try {
             log.info("START 명령 실행: modelProcessId={}, run.bat 호출", modelId);
-            Process process = runControlScript(definition, "run.bat");
+            Process process = runControlScript(definition, "start.bat");
             attachStartedPythonProcess(mp, definition, process);
             // RUNNING is confirmed here by liveness; health-gated confirmation is
             // performed later by the monitor/HealthChecker (§7.3 step 4).
@@ -198,6 +198,30 @@ public class DefaultProcessManager implements ProcessManager {
     }
 
     @Override
+    public void executeControlCommand(String modelId, ModelProcess definition, String commandType) {
+        if (definition == null) {
+            throw new IllegalArgumentException("process definition must not be null for " + modelId);
+        }
+        String normalized = normalizeCommandType(commandType);
+        switch (normalized.toUpperCase(java.util.Locale.ROOT)) {
+            case "START" -> startProcess(modelId, definition);
+            case "STOP" -> stopProcess(modelId, StopStrategy.GRACEFUL);
+            case "RESTART" -> restartProcess(modelId);
+            default -> {
+                log.info("Custom control command: modelProcessId={}, script={}.bat", modelId, normalized);
+                try {
+                    runControlScript(definition, normalized + ".bat");
+                } catch (Exception ex) {
+                    if (ex instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    throw new IllegalStateException("Custom command failed for " + modelId + ": " + ex.getMessage(), ex);
+                }
+            }
+        }
+    }
+
+    @Override
     public ProcessStatus getStatus(String modelId) {
         ManagedProcess mp = processes.get(modelId);
         if (mp == null) {
@@ -275,6 +299,14 @@ public class DefaultProcessManager implements ProcessManager {
         return List.of("cmd.exe", "/c", scriptName);
     }
 
+    private String normalizeCommandType(String commandType) {
+        String normalized = commandType == null ? "" : commandType.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!normalized.matches("[a-z0-9][a-z0-9_-]{0,19}")) {
+            throw new IllegalArgumentException("Invalid command type: " + commandType);
+        }
+        return normalized;
+    }
+
     private Process runControlScript(ModelProcess definition, String scriptName) throws Exception {
         File directory = projectDirectory(definition);
         File script = new File(directory, scriptName);
@@ -319,7 +351,7 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
         throw new IllegalStateException(
-                "run.bat started cmd.exe, but no Python process was found for project: "
+                "start.bat started cmd.exe, but no Python process was found for project: "
                         + definition.getPythonProjectPath());
     }
 

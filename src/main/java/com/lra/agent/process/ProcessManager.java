@@ -26,6 +26,9 @@ public interface ProcessManager {
     /** Gracefully stop then start the process for {@code modelId}. */
     void restartProcess(String modelId);
 
+    /** Execute a control script named {@code commandType}.bat for the process. */
+    void executeControlCommand(String modelId, ModelProcess definition, String commandType);
+
     /** Current status of {@code modelId}, or {@code null} if it is not managed. */
     ProcessStatus getStatus(String modelId);
 

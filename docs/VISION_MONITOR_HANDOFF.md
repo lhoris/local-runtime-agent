@@ -213,3 +213,15 @@ PROCESS_PID       = 실제 python.exe PID
 
 vision-monitor는 특히 `TB_M26_MODEL_PROCESS`의 기존 비즈니스 컬럼과 AUDIT 컬럼을
 삭제하지 않아야 하며, `PROCESS_PID`와 `MODEL_PROCESS_ID`를 같은 의미로 취급하면 안 됩니다.
+## Control Script Naming
+
+The command queue uses `COMMAND_TYPE` as the control script name. The Agent
+executes `<COMMAND_TYPE>.bat` from `PYTHON_PROJECT_PATH`.
+
+- `START` executes `start.bat`.
+- `STOP` executes `stop.bat`.
+- `RESTART` executes `restart.bat`.
+- A custom value such as `CUSTOM1` executes `custom1.bat`.
+
+Only letters, digits, underscores, and hyphens are accepted in command types;
+path separators and other shell syntax are rejected.

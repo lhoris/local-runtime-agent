@@ -1,22 +1,17 @@
--- Python process 폴더에서 바로 실행하는 명령 테스트용 단일 INSERT 문
--- 아래 IP와 MODEL_PROCESS_ID만 현재 환경에 맞게 수정합니다.
--- START를 STOP 또는 RESTART로 바꾸면 같은 방식으로 테스트할 수 있습니다.
+-- Replace the target IP and model process ID before running this smoke test.
+-- COMMAND_TYPE maps directly to <COMMAND_TYPE>.bat in the Python project.
 
-INSERT INTO TB_M26_COMMAND (
-    COMMAND_ID,
-    AGENT_ID,
+INSERT INTO TB_M26_MODEL_COMMAND (
     MODEL_PROCESS_ID,
+    TARGET_SERVER_IP,
     COMMAND_TYPE,
     COMMAND_STATUS,
-    COMMAND_PARAMETERS
+    REQUESTED_BY
 )
-SELECT
-    UUID(),
-    a.AGENT_ID,
-    '1001',
+VALUES (
+    1001,
+    '192.168.0.7',
     'RESTART',
-    'PENDING',
-    JSON_OBJECT()
-FROM TB_M26_AGENT a
-WHERE a.IP_ADDRESS = '192.168.0.7'
-LIMIT 1;
+    'REQUESTED',
+    'local-smoke-test'
+);

@@ -11,7 +11,7 @@ Flyway is intentionally not used by this application. Database changes are appli
 5. Confirm that the process row uses the created `AGENT_ID`.
 6. Run `smoke-test.sql` to verify Agent registration, process assignment, and heartbeat updates.
 7. Run `runtime-verification.sql` to inspect the complete loop flow, process PID, heartbeat, command results, and execution logs.
-8. Run `local-test/python-process/command-test.sql` to insert a `START`, `STOP`, or `RESTART` command for the local Python smoke test.
+8. Run `local-test/python-process/command-test.sql` to insert a `START`, `STOP`, `RESTART`, or custom command for the local Python smoke test.
 
 `TB_M26_MODEL_PROCESS` keeps the existing vision-monitor business columns and also contains the Agent execution/runtime columns. The Agent does not maintain a separate monitoring-target registration table.
 
@@ -21,9 +21,10 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `AGENT_ID` is generated from the local hostname; it does not need to be configured in application properties.
 - `TB_M26_MODEL_PROCESS.AGENT_ID` assigns a process to an Agent.
 - `TB_M26_MODEL_PROCESS.MODEL_PROCESS_ID` is the shared vision-monitor primary key.
-- `TB_M26_COMMAND.MODEL_PROCESS_ID` is the command target value and contains the model process ID as text.
+- `TB_M26_MODEL_COMMAND.MODEL_PROCESS_ID` is the numeric command target shared with vision-monitor.
+- `TB_M26_MODEL_COMMAND.COMMAND_TYPE` maps to `<COMMAND_TYPE>.bat` in `PYTHON_PROJECT_PATH`.
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
-- `PYTHON_PROJECT_PATH` points to a project directory containing `run.bat`, `stop.bat`, and `restart.bat`.
+- `PYTHON_PROJECT_PATH` points to a project directory containing `start.bat`, `stop.bat`, and `restart.bat`.
 
 All shared tables use the 14-column audit contract: `CREATED_*`, `LAST_UPDATED_*`, and `DATA_END_*`.
 
