@@ -30,6 +30,7 @@ public class DefaultProcessManager implements ProcessManager {
 
     /** Grace period before a GRACEFUL stop escalates to a forceful kill. */
     static final long GRACEFUL_TIMEOUT_SEC = 15;
+    private static final long PYTHON_DISCOVERY_TIMEOUT_SEC = 15;
     private static final int DEFAULT_MAX_RESTART_ATTEMPTS = 3;
 
     private final ProcessLauncher launcher;
@@ -116,6 +117,7 @@ public class DefaultProcessManager implements ProcessManager {
         } catch (Exception e) {
             log.error("Failed to start process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
+            throw new IllegalStateException("START failed for " + modelId + ": " + e.getMessage(), e);
         }
     }
 
@@ -191,6 +193,7 @@ public class DefaultProcessManager implements ProcessManager {
         } catch (Exception e) {
             log.error("Failed to restart process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
+            throw new IllegalStateException("RESTART failed for " + modelId + ": " + e.getMessage(), e);
         }
     }
 
@@ -327,7 +330,8 @@ public class DefaultProcessManager implements ProcessManager {
         if (controlHandle == null) {
             return java.util.Optional.empty();
         }
-        for (int attempt = 0; attempt < 10; attempt++) {
+        int attempts = (int) (PYTHON_DISCOVERY_TIMEOUT_SEC * 10);
+        for (int attempt = 0; attempt < attempts; attempt++) {
             java.util.Optional<ProcessHandle> child = findDescendant(controlHandle);
             if (child.isPresent()) {
                 return child;
