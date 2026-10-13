@@ -31,9 +31,6 @@ public class Agent extends BaseAudit {
     @Column(name = "IP_ADDRESS", length = 45)
     private String ipAddress;
 
-    @Column(name = "SPRING_BOOT_VERSION", length = 32)
-    private String springBootVersion;
-
     @Column(name = "INSTALLED_AT")
     private Timestamp installedAt;
 
@@ -70,14 +67,6 @@ public class Agent extends BaseAudit {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
-    }
-
-    public String getSpringBootVersion() {
-        return springBootVersion;
-    }
-
-    public void setSpringBootVersion(String springBootVersion) {
-        this.springBootVersion = springBootVersion;
     }
 
     public Timestamp getInstalledAt() {

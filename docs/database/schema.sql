@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS TB_M26_AGENT (
     HOSTNAME VARCHAR(256) COMMENT 'Agent가 실행되는 호스트명',
     OS_TYPE VARCHAR(32) COMMENT '운영체제 종류',
     IP_ADDRESS VARCHAR(45) COMMENT 'Agent 식별에 사용하는 로컬 IP 주소',
-    SPRING_BOOT_VERSION VARCHAR(32) COMMENT 'Agent의 Spring Boot 버전',
     INSTALLED_AT TIMESTAMP NULL COMMENT 'Agent 최초 등록 일시',
     WORKED_AT TIMESTAMP NULL COMMENT 'Agent가 마지막 루프를 수행한 일시'
 ) COMMENT='로컬 Runtime Agent 등록 및 네트워크 식별 정보';

@@ -13,7 +13,6 @@ public record AgentDetailDto(
         @JsonProperty("hostname") String hostname,
         @JsonProperty("os_type") String osType,
         @JsonProperty("ip_address") String ipAddress,
-        @JsonProperty("spring_boot_version") String springBootVersion,
         @JsonProperty("status") String status,
         @JsonProperty("last_heartbeat") Instant lastHeartbeat,
         @JsonProperty("installed_at") Instant installedAt,

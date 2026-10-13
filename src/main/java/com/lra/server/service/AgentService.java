@@ -53,7 +53,6 @@ public class AgentService {
                 agent.getHostname(),
                 agent.getOsType(),
                 agent.getIpAddress(),
-                agent.getSpringBootVersion(),
                 deriveAgentStatus(agentId),
                 lastHeartbeat(agentId),
                 agent.getInstalledAt() == null ? null : agent.getInstalledAt().toInstant(),
