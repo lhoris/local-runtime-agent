@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -20,7 +19,7 @@ import com.lra.db.entity.audit.BaseAudit;
  */
 @Entity
 @Table(name = "TB_M26_MODEL_COMMAND")
-public class Command extends BaseAudit {
+public class ModelCommand extends BaseAudit {
 
     @Id
     @NotBlank
@@ -119,7 +118,7 @@ public class Command extends BaseAudit {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Command other)) {
+        if (!(o instanceof ModelCommand other)) {
             return false;
         }
         return commandId != null && commandId.equals(other.commandId);

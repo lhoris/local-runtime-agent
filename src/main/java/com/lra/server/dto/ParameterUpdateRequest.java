@@ -1,4 +1,4 @@
-package com.lra.common.dto;
+package com.lra.server.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;

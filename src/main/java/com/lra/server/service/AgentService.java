@@ -1,9 +1,9 @@
 package com.lra.server.service;
 
-import com.lra.common.dto.AgentDetailDto;
-import com.lra.common.dto.AgentDto;
-import com.lra.common.dto.AgentsResponse;
-import com.lra.common.dto.ProcessDto;
+import com.lra.server.dto.AgentDetailDto;
+import com.lra.server.dto.AgentDto;
+import com.lra.server.dto.AgentsResponse;
+import com.lra.server.dto.ProcessDto;
 import com.lra.db.entity.Agent;
 import com.lra.db.entity.ModelProcess;
 import com.lra.db.repository.AgentRepository;

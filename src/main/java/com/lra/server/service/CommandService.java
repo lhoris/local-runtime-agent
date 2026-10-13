@@ -1,13 +1,13 @@
 package com.lra.server.service;
 
-import com.lra.common.dto.CommandCreateRequest;
-import com.lra.common.dto.CommandDto;
-import com.lra.common.dto.ExecutionLogDto;
-import com.lra.common.dto.ExecutionLogsResponse;
+import com.lra.server.dto.CommandCreateRequest;
+import com.lra.server.dto.CommandDto;
+import com.lra.server.dto.ExecutionLogDto;
+import com.lra.server.dto.ExecutionLogsResponse;
 import com.lra.common.enums.CommandStatus;
-import com.lra.db.entity.Command;
+import com.lra.db.entity.ModelCommand;
 import com.lra.db.entity.ExecutionLog;
-import com.lra.db.repository.CommandRepository;
+import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,12 +26,12 @@ public class CommandService {
 
     private static final String CREATED_BY = "central-server";
 
-    private final CommandRepository commandRepository;
+    private final ModelCommandRepository modelCommandRepository;
     private final ExecutionLogRepository executionLogRepository;
 
-    public CommandService(CommandRepository commandRepository,
+    public CommandService(ModelCommandRepository modelCommandRepository,
                           ExecutionLogRepository executionLogRepository) {
-        this.commandRepository = commandRepository;
+        this.modelCommandRepository = modelCommandRepository;
         this.executionLogRepository = executionLogRepository;
     }
 
@@ -41,14 +41,14 @@ public class CommandService {
      */
     @Transactional
     public CommandDto createCommand(CommandCreateRequest request) {
-        Command command = new Command();
+        ModelCommand command = new ModelCommand();
         command.setCommandId(UUID.randomUUID().toString());
         command.setAgentId(request.agentId());
         command.setProcessId(request.processId());
         command.setCommandType(request.commandType().name());
         command.setCommandStatus(CommandStatus.PENDING.name());
         command.setParameters(request.parameters());
-        Command saved = commandRepository.save(command);
+        ModelCommand saved = modelCommandRepository.save(command);
         return toCommandDto(saved);
     }
 
@@ -71,7 +71,7 @@ public class CommandService {
                 page.getTotalElements());
     }
 
-    private CommandDto toCommandDto(Command command) {
+    private CommandDto toCommandDto(ModelCommand command) {
         return new CommandDto(
                 command.getCommandId(),
                 command.getAgentId(),

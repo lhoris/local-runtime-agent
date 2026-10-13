@@ -1,8 +1,8 @@
 package com.lra.server.service;
 
-import com.lra.common.dto.CommandCreateRequest;
-import com.lra.common.dto.ParameterDto;
-import com.lra.common.dto.ParameterUpdateRequest;
+import com.lra.server.dto.CommandCreateRequest;
+import com.lra.server.dto.ParameterDto;
+import com.lra.server.dto.ParameterUpdateRequest;
 import com.lra.common.enums.CommandType;
 import com.lra.db.entity.ModelParameter;
 import com.lra.db.entity.ModelProcess;

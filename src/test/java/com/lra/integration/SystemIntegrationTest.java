@@ -15,11 +15,11 @@ import com.lra.agent.process.StopStrategy;
 import com.lra.agent.sync.DBSyncManager;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.ModelProcess;
-import com.lra.db.entity.Command;
+import com.lra.db.entity.ModelCommand;
 import com.lra.db.entity.ModelParameter;
 import com.lra.db.repository.AgentRepository;
 import com.lra.db.repository.ModelProcessRepository;
-import com.lra.db.repository.CommandRepository;
+import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
 import java.time.Duration;
@@ -65,7 +65,7 @@ class SystemIntegrationTest {
     @Autowired
     ModelProcessRepository modelProcessRepository;
     @Autowired
-    CommandRepository commandRepository;
+    ModelCommandRepository modelCommandRepository;
     @Autowired
     ModelParameterRepository modelParameterRepository;
     @Autowired
@@ -94,7 +94,7 @@ class SystemIntegrationTest {
         // Children first to respect foreign keys.
         executionLogRepository.deleteAll();
         modelParameterRepository.deleteAll();
-        commandRepository.deleteAll();
+        modelCommandRepository.deleteAll();
         modelProcessRepository.deleteAll();
         agentRepository.deleteAll();
     }
@@ -151,7 +151,7 @@ class SystemIntegrationTest {
         assertThat(created.get("status").asText()).isEqualTo("PENDING");
         assertThat(created.get("command_type").asText()).isEqualTo("START");
 
-        List<Command> pending = commandRepository.findByAgentIdAndCommandStatus("agent-2", "PENDING");
+        List<ModelCommand> pending = modelCommandRepository.findByAgentIdAndCommandStatus("agent-2", "PENDING");
         assertThat(pending).hasSize(1);
         assertThat(pending.get(0).getProcessId()).isEqualTo("2");
     }
@@ -181,7 +181,7 @@ class SystemIntegrationTest {
         List<ModelParameter> all = modelParameterRepository.findAll();
         assertThat(all).as("both versions retained").hasSize(2);
 
-        List<Command> restarts = commandRepository.findByAgentIdAndCommandStatus("agent-3", "PENDING");
+        List<ModelCommand> restarts = modelCommandRepository.findByAgentIdAndCommandStatus("agent-3", "PENDING");
         assertThat(restarts).as("apply_immediately queues one RESTART").hasSize(1);
         assertThat(restarts.get(0).getCommandType()).isEqualTo("RESTART");
         assertThat(restarts.get(0).getProcessId()).isEqualTo("3");

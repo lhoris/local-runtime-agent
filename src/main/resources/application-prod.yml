@@ -29,7 +29,7 @@ spring:
         order_updates: true
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8081}
   # TLS: enable by supplying a keystore via environment variables.
   ssl:
     enabled: ${SERVER_SSL_ENABLED:false}

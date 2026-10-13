@@ -12,7 +12,7 @@ import com.lra.db.entity.ModelProcess;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.repository.AgentRepository;
 import com.lra.db.repository.ModelProcessRepository;
-import com.lra.db.repository.CommandRepository;
+import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import com.lra.db.repository.ModelParameterRepository;
 import org.junit.jupiter.api.Disabled;
@@ -41,7 +41,7 @@ class ApiControllerTest {
     ModelProcessRepository modelProcessRepository;
 
     @Autowired
-    CommandRepository commandRepository;
+    ModelCommandRepository modelCommandRepository;
 
     @Autowired
     ModelParameterRepository modelParameterRepository;

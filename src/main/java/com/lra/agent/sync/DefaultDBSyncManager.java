@@ -10,10 +10,10 @@ import com.lra.common.enums.CommandStatus;
 import com.lra.common.enums.CommandType;
 import com.lra.db.entity.Agent;
 import com.lra.db.entity.ModelProcess;
-import com.lra.db.entity.Command;
+import com.lra.db.entity.ModelCommand;
 import com.lra.db.entity.ExecutionLog;
 import com.lra.db.repository.ModelProcessRepository;
-import com.lra.db.repository.CommandRepository;
+import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
     private final AgentIdentityResolver agentIdentityResolver;
     private final ProcessManager processManager;
     private final ModelProcessRepository modelProcessRepository;
-    private final CommandRepository commandRepository;
+    private final ModelCommandRepository modelCommandRepository;
     private final ExecutionLogRepository executionLogRepository;
 
     private HealthChecker healthChecker;
@@ -59,12 +59,12 @@ public class DefaultDBSyncManager implements DBSyncManager {
     public DefaultDBSyncManager(AgentIdentityResolver agentIdentityResolver,
                                 ProcessManager processManager,
                                 ModelProcessRepository modelProcessRepository,
-                                CommandRepository commandRepository,
+                                ModelCommandRepository modelCommandRepository,
                                 ExecutionLogRepository executionLogRepository) {
         this.agentIdentityResolver = agentIdentityResolver;
         this.processManager = processManager;
         this.modelProcessRepository = modelProcessRepository;
-        this.commandRepository = commandRepository;
+        this.modelCommandRepository = modelCommandRepository;
         this.executionLogRepository = executionLogRepository;
     }
 
@@ -116,11 +116,11 @@ public class DefaultDBSyncManager implements DBSyncManager {
             log.warn("명령 조회 중단: 현재 로컬 Agent를 찾을 수 없음");
             return;
         }
-        List<Command> commands = commandRepository.findByAgentIdAndCommandStatus(
+        List<ModelCommand> commands = modelCommandRepository.findByAgentIdAndCommandStatus(
                 agentId, CommandStatus.PENDING.name());
         log.info("PENDING 명령 조회 완료: agent={}, commandCount={}", agentId, commands.size());
 
-        for (Command cmd : commands) {
+        for (ModelCommand cmd : commands) {
             long startMillis = System.currentTimeMillis();
             log.info("명령 처리 시작: commandId={}, type={}, modelProcessId={}",
                     cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
@@ -128,7 +128,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 ExecutionResult result = executeCommand(cmd);
                 cmd.setCommandStatus(CommandStatus.COMPLETED.name());
                 cmd.setProcessedAt(databaseNow());
-                commandRepository.save(cmd);
+                modelCommandRepository.save(cmd);
                 logExecution(result);
                 log.info("명령 처리 완료: commandId={}, type={}, modelProcessId={}, status=COMPLETED",
                         cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
@@ -138,7 +138,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 cmd.setCommandStatus(CommandStatus.FAILED.name());
                 cmd.setProcessedAt(databaseNow());
                 cmd.setFailedReason(e.getMessage());
-                commandRepository.save(cmd);
+                modelCommandRepository.save(cmd);
 
                 int durationSec = (int) ((System.currentTimeMillis() - startMillis) / 1000);
                 logExecution(ExecutionResult.failure(
@@ -166,7 +166,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 entry.getLogId(), entry.getCommandType(), entry.getProcessId(), entry.getExecutionStatus());
     }
 
-    private ExecutionResult executeCommand(Command cmd) throws Exception {
+    private ExecutionResult executeCommand(ModelCommand cmd) throws Exception {
         long startMillis = System.currentTimeMillis();
         CommandType type = parseCommandTypeOrNull(cmd.getCommandType());
         String modelId = cmd.getProcessId();

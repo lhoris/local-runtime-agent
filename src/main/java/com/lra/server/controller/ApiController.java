@@ -1,12 +1,12 @@
 package com.lra.server.controller;
 
-import com.lra.common.dto.AgentDetailDto;
-import com.lra.common.dto.AgentsResponse;
-import com.lra.common.dto.CommandCreateRequest;
-import com.lra.common.dto.CommandDto;
-import com.lra.common.dto.ExecutionLogsResponse;
-import com.lra.common.dto.ParameterDto;
-import com.lra.common.dto.ParameterUpdateRequest;
+import com.lra.server.dto.AgentDetailDto;
+import com.lra.server.dto.AgentsResponse;
+import com.lra.server.dto.CommandCreateRequest;
+import com.lra.server.dto.CommandDto;
+import com.lra.server.dto.ExecutionLogsResponse;
+import com.lra.server.dto.ParameterDto;
+import com.lra.server.dto.ParameterUpdateRequest;
 import com.lra.server.service.AgentService;
 import com.lra.server.service.CommandService;
 import com.lra.server.service.ParameterService;
