@@ -113,7 +113,7 @@ WHERE p.MODEL_PROCESS_ID = @model_process_id
   AND p.AGENT_ID = @agent_id;
 
 -- Manual alternative: attach a process that was started outside the Agent.
--- The Agent starts and stops run.bat, stop.bat, and restart.bat in the project directory.
+-- The Agent starts and stops start.bat, stop.bat, and restart.bat in the project directory.
 -- It updates PROCESS_PID only when a matching process is found.
 INSERT INTO TB_M26_MODEL_COMMAND (
     COMMAND_ID, AGENT_ID, MODEL_PROCESS_ID, COMMAND_TYPE,

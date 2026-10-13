@@ -16,7 +16,7 @@ FROM TB_M26_MODEL_PROCESS;
 ALTER TABLE TB_M26_MODEL_PROCESS
     ADD COLUMN IF NOT EXISTS MODEL_PROCESS_ID BIGINT UNSIGNED NULL COMMENT 'Shared vision-monitor model process identifier' AFTER DATA_END_TIMESTAMP,
     ADD COLUMN IF NOT EXISTS AGENT_ID VARCHAR(64) NULL COMMENT 'Agent responsible for this process' AFTER MODEL_PROCESS_ID,
-    ADD COLUMN IF NOT EXISTS PYTHON_PROJECT_PATH VARCHAR(512) NULL COMMENT 'Python project directory containing run.bat, stop.bat, and restart.bat',
+    ADD COLUMN IF NOT EXISTS PYTHON_PROJECT_PATH VARCHAR(512) NULL COMMENT 'Python project directory containing start.bat, stop.bat, and restart.bat',
     ADD COLUMN IF NOT EXISTS AUTO_RESTART BOOLEAN DEFAULT TRUE COMMENT 'Whether crashed processes are restarted automatically',
     ADD COLUMN IF NOT EXISTS MAX_RESTART_ATTEMPTS INT DEFAULT 3 COMMENT 'Maximum automatic restart attempts',
     ADD COLUMN IF NOT EXISTS RESTART_DELAY_SEC INT DEFAULT 10 COMMENT 'Delay before automatic restart in seconds',

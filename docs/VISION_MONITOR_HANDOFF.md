@@ -25,7 +25,7 @@ Agent가 `START`, `STOP`, `RESTART` 명령을 실행할 때 대상 모델 프로
 
 - 애플리케이션 시작 시에는 NULL일 수 있습니다.
 - `START` 또는 `RESTART` 후 Agent가 실제 `python.exe`를 찾아 갱신합니다.
-- `cmd.exe` 또는 `run.bat`의 래퍼 PID를 저장하지 않습니다.
+- `cmd.exe` 또는 `start.bat`의 래퍼 PID를 저장하지 않습니다.
 - PID가 살아 있으면 `PROCESS_STATUS = RUNNING`, 종료되면 `STOPPED` 또는 `CRASHED`로 반영합니다.
 
 ## 3. TB_M26_MODEL_PROCESS
@@ -42,7 +42,7 @@ Agent가 `START`, `STOP`, `RESTART` 명령을 실행할 때 대상 모델 프로
 | `MODEL_NAME` | 모델 또는 프로세스 이름 |
 | `AUTOMATION_NAME` | 자동화 이름 |
 | `SERVER_IP` | 프로세스가 실행되는 서버 IP |
-| `PYTHON_PROJECT_PATH` | `run.bat`, `stop.bat`, `restart.bat`가 있는 Python 프로젝트 디렉터리 |
+| `PYTHON_PROJECT_PATH` | `start.bat`, `stop.bat`, `restart.bat`가 있는 Python 프로젝트 디렉터리 |
 | `PROCESS_STATUS` | 공통 프로세스 상태 |
 | `MONITORING_STATUS` | vision-monitor 기존 모니터링 상태 |
 | `CONTROL_STATUS` | vision-monitor 기존 제어 상태 |
@@ -147,7 +147,7 @@ DATA_END_TIMESTAMP
 ```
 
 `START`가 성공하려면 먼저 `TB_M26_MODEL_PROCESS`에 명령 대상 ID가 존재해야 하고,
-`PYTHON_PROJECT_PATH`에 `run.bat`이 있어야 합니다.
+`PYTHON_PROJECT_PATH`에 `start.bat`이 있어야 합니다.
 
 ## 7. 확인 SQL
 
@@ -216,7 +216,7 @@ vision-monitor는 특히 `TB_M26_MODEL_PROCESS`의 기존 비즈니스 컬럼과
 ## Control Script Naming
 
 The command queue uses `COMMAND_TYPE` as the control script name. The Agent
-executes `<COMMAND_TYPE>.bat` from `PYTHON_PROJECT_PATH`.
+executes the matching control script from `PYTHON_PROJECT_PATH`.
 
 - `START` executes `start.bat`.
 - `STOP` executes `stop.bat`.

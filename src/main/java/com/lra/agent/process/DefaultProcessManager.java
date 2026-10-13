@@ -103,7 +103,7 @@ public class DefaultProcessManager implements ProcessManager {
 
         transition(mp, ProcessState.STARTING);
         try {
-            log.info("START 명령 실행: modelProcessId={}, run.bat 호출", modelId);
+            log.info("START 명령 실행: modelProcessId={}, start.bat 호출", modelId);
             Process process = runControlScript(definition, "start.bat");
             attachStartedPythonProcess(mp, definition, process);
             // RUNNING is confirmed here by liveness; health-gated confirmation is
