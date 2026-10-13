@@ -41,5 +41,9 @@ The Agent stores the PID of the foreground `cmd.exe` wrapper started for
 also exits when the Python process exits, so PID liveness is useful for the
 Agent's local smoke test.
 
+`start.bat` uses `py -3` instead of the bare `python` command. On Windows,
+the bare command can resolve to the Microsoft Store execution alias instead
+of the installed Python interpreter.
+
 Run `command-test.sql` from this folder to enqueue a command with one INSERT
 statement. Change the IP address, model process ID, and command type first.
