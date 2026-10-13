@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
+import com.lra.db.entity.audit.BaseAudit;
 
 /**
  * A historical record of a command execution and its outcome
@@ -16,7 +17,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "TB_M26_EXECUTION_LOG")
-public class ExecutionLog {
+public class ExecutionLog extends BaseAudit {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id

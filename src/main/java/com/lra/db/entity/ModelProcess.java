@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.sql.Timestamp;
 import java.util.Objects;
+import com.lra.db.entity.audit.BaseAudit;
 
 /**
  * Latest observed runtime status of a managed model process
@@ -16,7 +17,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "TB_M26_MODEL_PROCESS")
-public class ModelProcess {
+public class ModelProcess extends BaseAudit {
 
     /** Shared vision-monitor database identifier. */
     @Id

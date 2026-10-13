@@ -13,13 +13,14 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import com.lra.db.entity.audit.BaseAudit;
 
 /**
  * A control command queued for an agent to consume (ARCHITECTURE.md §5.1 commands).
  */
 @Entity
 @Table(name = "TB_M26_MODEL_COMMAND")
-public class Command {
+public class Command extends BaseAudit {
 
     @Id
     @NotBlank

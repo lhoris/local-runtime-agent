@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
+import com.lra.db.entity.audit.BaseAudit;
 
 /**
  * A versioned key/value tuning parameter for a model process
@@ -17,7 +18,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "TB_M26_MODEL_PARAMETER")
-public class ModelParameter {
+public class ModelParameter extends BaseAudit {
 
     /** Application-assigned identifier (not DB-generated). */
     @Id

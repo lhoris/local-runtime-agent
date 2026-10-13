@@ -8,13 +8,14 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.sql.Timestamp;
 import java.util.Objects;
+import com.lra.db.entity.audit.BaseAudit;
 
 /**
  * A PC-unit agent registered with the central server (ARCHITECTURE.md §5.1 agent).
  */
 @Entity
 @Table(name = "TB_M26_AGENT")
-public class Agent {
+public class Agent extends BaseAudit {
 
     @Id
     @NotBlank
