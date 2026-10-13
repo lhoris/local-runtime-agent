@@ -88,7 +88,8 @@ public class AgentService {
         return modelProcessRepository.findByAgentId(agentId).stream()
                 .map(ModelProcess::getLastHeartbeat)
                 .filter(java.util.Objects::nonNull)
-                .max(java.time.Instant::compareTo)
+                .max(java.sql.Timestamp::compareTo)
+                .map(java.sql.Timestamp::toInstant)
                 .orElse(null);
     }
 

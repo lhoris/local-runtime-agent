@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +44,7 @@ public class Command {
     private Map<String, Object> parameters;
 
     @Column(name = "PROCESSED_AT")
-    private Instant processedAt;
+    private Timestamp processedAt;
 
     @Column(name = "FAILED_REASON", columnDefinition = "text")
     private String failedReason;
@@ -97,10 +98,10 @@ public class Command {
     }
 
     public Instant getProcessedAt() {
-        return processedAt;
+        return processedAt == null ? null : processedAt.toInstant();
     }
 
-    public void setProcessedAt(Instant processedAt) {
+    public void setProcessedAt(Timestamp processedAt) {
         this.processedAt = processedAt;
     }
 

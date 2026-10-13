@@ -78,6 +78,9 @@ public class AgentIdentityResolver {
             agent.setIpAddress(currentIp);
             agent.setWorkedAt(Timestamp.valueOf(LocalDateTime.now(DATABASE_ZONE)));
             Agent saved = agentRepository.save(agent);
+            if (saved == null) {
+                saved = agent;
+            }
             log.info("Agent WORKED_AT updated: agentId={}, workedAt={}, ipAddress={}",
                     saved.getAgentId(), saved.getWorkedAt(), saved.getIpAddress());
             return Optional.of(saved);

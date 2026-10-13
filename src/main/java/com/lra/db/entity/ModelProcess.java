@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 
-import java.time.Instant;
+import java.sql.Timestamp;
 import java.util.Objects;
 
 /**
@@ -66,10 +66,10 @@ public class ModelProcess {
     private Integer pid;
 
     @Column(name = "LAST_HEALTH_CHECK")
-    private Instant lastHealthCheck;
+    private Timestamp lastHealthCheck;
 
     @Column(name = "LAST_HEARTBEAT")
-    private Instant lastHeartbeat;
+    private Timestamp lastHeartbeat;
 
     @Column(name = "HEALTH_STATUS", length = 32)
     private String healthStatus;
@@ -206,19 +206,19 @@ public class ModelProcess {
         this.pid = pid;
     }
 
-    public Instant getLastHealthCheck() {
+    public Timestamp getLastHealthCheck() {
         return lastHealthCheck;
     }
 
-    public void setLastHealthCheck(Instant lastHealthCheck) {
+    public void setLastHealthCheck(Timestamp lastHealthCheck) {
         this.lastHealthCheck = lastHealthCheck;
     }
 
-    public Instant getLastHeartbeat() {
+    public Timestamp getLastHeartbeat() {
         return lastHeartbeat;
     }
 
-    public void setLastHeartbeat(Instant lastHeartbeat) {
+    public void setLastHeartbeat(Timestamp lastHeartbeat) {
         this.lastHeartbeat = lastHeartbeat;
     }
 

@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.time.Instant;
+import java.sql.Timestamp;
 
 /** Command queue shared with vision-monitor. */
 @Entity
@@ -35,13 +35,13 @@ public class ModelCommand {
     private String requestedBy;
 
     @Column(name = "REQUESTED_TIMESTAMP")
-    private Instant requestedTimestamp;
+    private Timestamp requestedTimestamp;
 
     @Column(name = "CLAIMED_TIMESTAMP")
-    private Instant claimedTimestamp;
+    private Timestamp claimedTimestamp;
 
     @Column(name = "PROCESSED_TIMESTAMP")
-    private Instant processedTimestamp;
+    private Timestamp processedTimestamp;
 
     @Column(name = "AGENT_ID", length = 100)
     private String agentId;
@@ -66,8 +66,8 @@ public class ModelCommand {
     public void setCommandType(String commandType) { this.commandType = commandType; }
     public String getCommandStatus() { return commandStatus; }
     public void setCommandStatus(String commandStatus) { this.commandStatus = commandStatus; }
-    public void setClaimedTimestamp(Instant claimedTimestamp) { this.claimedTimestamp = claimedTimestamp; }
-    public void setProcessedTimestamp(Instant processedTimestamp) { this.processedTimestamp = processedTimestamp; }
+    public void setClaimedTimestamp(Timestamp claimedTimestamp) { this.claimedTimestamp = claimedTimestamp; }
+    public void setProcessedTimestamp(Timestamp processedTimestamp) { this.processedTimestamp = processedTimestamp; }
     public void setAgentId(String agentId) { this.agentId = agentId; }
     public void setResultCode(String resultCode) { this.resultCode = resultCode; }
     public void setResultMessage(String resultMessage) { this.resultMessage = resultMessage; }

@@ -23,7 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +43,8 @@ import java.util.UUID;
  */
 @Service
 public class DefaultDBSyncManager implements DBSyncManager {
+
+    private static final ZoneId DATABASE_ZONE = ZoneId.of("Asia/Seoul");
 
     private static final Logger log = LoggerFactory.getLogger(DefaultDBSyncManager.class);
     private static final int PREVIEW_LIMIT = 1000;
@@ -89,7 +93,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
         }
         List<ProcessStatus> statuses = processManager.getAllStatus();
         log.info("프로세스 상태 DB 동기화 시작: agent={}, processCount={}", agentId, statuses.size());
-        Instant now = Instant.now();
+        Timestamp now = databaseNow();
         for (ProcessStatus status : statuses) {
             ModelProcess record = modelProcessRepository.findById(parseModelProcessId(status.getModelId()))
                     .orElseGet(ModelProcess::new);
@@ -132,7 +136,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
             try {
                 ExecutionResult result = executeCommand(cmd);
                 cmd.setCommandStatus(CommandStatus.COMPLETED.name());
-                cmd.setProcessedAt(Instant.now());
+                cmd.setProcessedAt(databaseNow());
                 commandRepository.save(cmd);
                 logExecution(result);
                 log.info("명령 처리 완료: commandId={}, type={}, modelProcessId={}, status=COMPLETED",
@@ -141,7 +145,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 log.warn("명령 처리 실패: commandId={}, type={}, modelProcessId={}, reason={}",
                         cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId(), e.getMessage());
                 cmd.setCommandStatus(CommandStatus.FAILED.name());
-                cmd.setProcessedAt(Instant.now());
+                cmd.setProcessedAt(databaseNow());
                 cmd.setFailedReason(e.getMessage());
                 commandRepository.save(cmd);
 
@@ -188,18 +192,18 @@ public class DefaultDBSyncManager implements DBSyncManager {
             long startMillis = System.currentTimeMillis();
             command.setCommandStatus("PROCESSING");
             command.setAgentId(agent.getAgentId());
-            command.setClaimedTimestamp(Instant.now());
+            command.setClaimedTimestamp(databaseNow());
             modelCommandRepository.save(command);
             try {
                 ExecutionResult result = executeSharedCommand(command);
                 command.setCommandStatus("COMPLETED");
-                command.setProcessedTimestamp(Instant.now());
+                command.setProcessedTimestamp(databaseNow());
                 command.setResultCode("SUCCESS");
                 modelCommandRepository.save(command);
                 safeLogExecution(result);
             } catch (Exception ex) {
                 command.setCommandStatus("FAILED");
-                command.setProcessedTimestamp(Instant.now());
+                command.setProcessedTimestamp(databaseNow());
                 command.setResultCode("FAILURE");
                 command.setResultMessage(ex.getMessage());
                 modelCommandRepository.save(command);
@@ -318,6 +322,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
     private Agent currentAgentOrNull() {
         return agentIdentityResolver.resolveOrRegisterCurrentAgent().orElse(null);
+    }
+
+    private Timestamp databaseNow() {
+        return Timestamp.valueOf(LocalDateTime.now(DATABASE_ZONE));
     }
 
     private String truncate(String value) {
