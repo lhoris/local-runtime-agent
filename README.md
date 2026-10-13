@@ -98,18 +98,21 @@ TLS는 `SERVER_SSL_ENABLED=true`와 키스토어 관련 변수로 활성화한�
 
 기본 로그 파일은 `logs/application.log`(`LOG_FILE`로 변경 가능). 콘솔에도 함께 출력된다.
 
-## 배포 (Deployment)
+## 실행
 
-서비스로 배포하는 방법(Linux systemd 포함)은 [`DEPLOYMENT.md`](DEPLOYMENT.md)를 참고한다.
+운영체제 서비스 등록 스크립트는 제공하지 않는다. JAR를 빌드한 뒤 직접 실행한다.
 
 ```bash
 ./mvnw clean package
-sudo scripts/linux/install-service.sh
-systemctl status local-runtime-agent
+java -jar target/local-runtime-agent-*.jar --spring.profiles.active=prod
 ```
 
-- **Linux**: `scripts/linux/install-service.sh` (systemd) — 구현 완료
-- **Windows**: Windows Service (WinSW 래퍼) — 설계 완료, 스크립트는 향후 제공 (`DEPLOYMENT.md` 참고)
+로컬 검증은 `local` 프로필과 `application-local.yml`을 사용한다.
+
+```powershell
+.\mvnw.cmd clean package
+java -jar target\local-runtime-agent-*.jar --spring.profiles.active=local
+```
 
 ## 아키텍처
 

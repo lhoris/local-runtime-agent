@@ -18,7 +18,7 @@ Agent는 중앙 서버 없이도 자체 동작하는 자율 루프(Autonomous Lo
 - **Auto-restart** — crash 감지 시 재시작 횟수 한도 내 자동 복구
 
 핵심 흐름: `DB 명령 → 폴링 → ProcessManager 실행 → 상태 갱신 → DB 반영`. 상세는 아래 12개 섹션 참고.
-빌드·실행·배포는 [`../README.md`](../README.md) 및 [`../DEPLOYMENT.md`](../DEPLOYMENT.md) 참고.
+빌드·실행은 [`../README.md`](../README.md) 참고.
 
 ---
 
