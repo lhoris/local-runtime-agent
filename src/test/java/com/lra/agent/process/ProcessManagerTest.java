@@ -1,6 +1,7 @@
 package com.lra.agent.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -93,7 +94,8 @@ class ProcessManagerTest {
         when(proc.exitValue()).thenReturn(1);
         when(launcher.launch(any(), any(), any())).thenReturn(proc);
 
-        manager.startProcess("m1", config(true, 3));
+        assertThatThrownBy(() -> manager.startProcess("m1", config(true, 3)))
+                .isInstanceOf(IllegalStateException.class);
 
         assertThat(manager.getStatus("m1").getState()).isEqualTo(ProcessState.CRASHED);
     }

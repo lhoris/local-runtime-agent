@@ -116,11 +116,14 @@ public class DefaultProcessManager implements ProcessManager {
                 mp.setErrorMessage(reason);
                 log.error("Process {} exited immediately (pid={})", modelId, mp.getPid());
                 transition(mp, ProcessState.CRASHED);
+                throw new IllegalStateException(reason);
             }
         } catch (Exception e) {
             mp.setErrorMessage("프로세스 시작 실패: " + e.getMessage());
             log.error("Failed to start process {}: {}", modelId, e.getMessage(), e);
-            transition(mp, ProcessState.STOPPED);
+            if (mp.getState() != ProcessState.CRASHED) {
+                transition(mp, ProcessState.STOPPED);
+            }
             throw new IllegalStateException("START failed for " + modelId + ": " + e.getMessage(), e);
         }
     }
@@ -193,8 +196,16 @@ public class DefaultProcessManager implements ProcessManager {
             log.info("RESTART 명령 실행: modelProcessId={}, restart.bat 호출", modelId);
             Process process = runControlScript(definition, "restart.bat");
             attachStartedPythonProcess(mp, definition, process);
-            transition(mp, mp.isAlive() ? ProcessState.RUNNING : ProcessState.CRASHED);
+            if (mp.isAlive()) {
+                transition(mp, ProcessState.RUNNING);
+            } else {
+                String reason = "프로세스가 재시작 직후 종료됨 (PID=" + mp.getPid() + ")";
+                mp.setErrorMessage(reason);
+                transition(mp, ProcessState.CRASHED);
+                throw new IllegalStateException(reason);
+            }
         } catch (Exception e) {
+            mp.setErrorMessage("프로세스 재시작 실패: " + e.getMessage());
             log.error("Failed to restart process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
             throw new IllegalStateException("RESTART failed for " + modelId + ": " + e.getMessage(), e);
