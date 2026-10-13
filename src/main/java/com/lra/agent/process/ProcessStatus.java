@@ -18,6 +18,7 @@ public class ProcessStatus {
     private Integer memoryMb;
     private Long uptimeSec;
     private LocalDateTime lastUpdate;
+    private String errorMessage;
 
     public ProcessStatus() {
     }
@@ -90,5 +91,13 @@ public class ProcessStatus {
 
     public void setLastUpdate(LocalDateTime lastUpdate) {
         this.lastUpdate = lastUpdate;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }

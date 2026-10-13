@@ -17,6 +17,7 @@ class ManagedProcess {
     private Integer pid;
     private Instant startTime;
     private int crashCount;
+    private String errorMessage;
 
     ManagedProcess(String modelId, ModelProcess definition) {
         this.modelId = modelId;
@@ -66,6 +67,14 @@ class ManagedProcess {
 
     void setStartTime(Instant startTime) {
         this.startTime = startTime;
+    }
+
+    String getErrorMessage() {
+        return errorMessage;
+    }
+
+    void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 
     int getCrashCount() {

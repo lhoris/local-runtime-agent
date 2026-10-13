@@ -102,6 +102,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
             record.setUptimeSec(status.getUptimeSec());
             record.setLastHealthCheck(now);
             record.setLastHeartbeat(now);
+            record.setErrorMessage(status.getErrorMessage());
             modelProcessRepository.save(record);
             log.info("프로세스 상태 DB 저장 완료: modelProcessId={}, state={}, pid={}, healthStatus={}",
                     status.getModelId(), status.getState(), status.getPid(), status.getHealthStatus());

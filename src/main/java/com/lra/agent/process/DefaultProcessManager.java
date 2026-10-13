@@ -101,6 +101,7 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
 
+        mp.setErrorMessage(null);
         transition(mp, ProcessState.STARTING);
         try {
             log.info("START 명령 실행: modelProcessId={}, start.bat 호출", modelId);
@@ -111,10 +112,13 @@ public class DefaultProcessManager implements ProcessManager {
             if (mp.isAlive()) {
                 transition(mp, ProcessState.RUNNING);
             } else {
+                String reason = "프로세스가 시작 직후 종료됨 (PID=" + mp.getPid() + ")";
+                mp.setErrorMessage(reason);
                 log.error("Process {} exited immediately (pid={})", modelId, mp.getPid());
                 transition(mp, ProcessState.CRASHED);
             }
         } catch (Exception e) {
+            mp.setErrorMessage("프로세스 시작 실패: " + e.getMessage());
             log.error("Failed to start process {}: {}", modelId, e.getMessage(), e);
             transition(mp, ProcessState.STOPPED);
             throw new IllegalStateException("START failed for " + modelId + ": " + e.getMessage(), e);
@@ -256,6 +260,7 @@ public class DefaultProcessManager implements ProcessManager {
         ProcessState state = mp.getState();
         if ((state == ProcessState.RUNNING || state == ProcessState.STARTING) && !mp.isAlive()) {
             mp.incrementCrashCount();
+            mp.setErrorMessage("프로세스가 더 이상 실행 중이 아님 (PID=" + mp.getPid() + ")");
             log.warn("Process {} is no longer alive (pid={}), marking CRASHED (crashCount={})",
                 mp.getModelId(), mp.getPid(), mp.getCrashCount());
             transition(mp, ProcessState.CRASHED);
@@ -267,6 +272,7 @@ public class DefaultProcessManager implements ProcessManager {
         status.setPid(mp.getPid());
         status.setUptimeSec(mp.isAlive() ? mp.uptimeSec() : 0L);
         status.setLastUpdate(LocalDateTime.now());
+        status.setErrorMessage(mp.getErrorMessage());
         // cpuPercent/memoryMb require a platform-specific collector; left null for
         // the MVP (§11: MVP health check is PID existence only).
         return status;
