@@ -56,7 +56,7 @@ public class AgentService {
                 agent.getSpringBootVersion(),
                 deriveAgentStatus(agentId),
                 lastHeartbeat(agentId),
-                agent.getInstalledAt(),
+                agent.getInstalledAt() == null ? null : agent.getInstalledAt().toInstant(),
                 processes);
     }
 

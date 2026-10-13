@@ -6,7 +6,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
-import java.time.Instant;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -35,7 +34,7 @@ public class Agent {
     private String springBootVersion;
 
     @Column(name = "INSTALLED_AT")
-    private Instant installedAt;
+    private Timestamp installedAt;
 
     @Column(name = "WORKED_AT")
     private Timestamp workedAt;
@@ -80,11 +79,11 @@ public class Agent {
         this.springBootVersion = springBootVersion;
     }
 
-    public Instant getInstalledAt() {
+    public Timestamp getInstalledAt() {
         return installedAt;
     }
 
-    public void setInstalledAt(Instant installedAt) {
+    public void setInstalledAt(Timestamp installedAt) {
         this.installedAt = installedAt;
     }
 

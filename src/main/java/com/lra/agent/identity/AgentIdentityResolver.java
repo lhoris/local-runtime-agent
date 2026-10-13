@@ -4,7 +4,6 @@ import com.lra.db.entity.Agent;
 import com.lra.db.repository.AgentRepository;
 import java.util.List;
 import java.util.Optional;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.sql.Timestamp;
@@ -92,7 +91,7 @@ public class AgentIdentityResolver {
         Agent agent = agentRepository.findByHostname(hostname).stream().findFirst().orElseGet(Agent::new);
         if (agent.getAgentId() == null || agent.getAgentId().isBlank()) {
             agent.setAgentId(buildAgentId(hostname, localIps.get(0)));
-            agent.setInstalledAt(Instant.now());
+            agent.setInstalledAt(Timestamp.valueOf(LocalDateTime.now(DATABASE_ZONE)));
         }
         agent.setHostname(hostname);
         agent.setOsType(System.getProperty("os.name", "unknown"));
