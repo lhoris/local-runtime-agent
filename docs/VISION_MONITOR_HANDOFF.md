@@ -74,7 +74,7 @@ Agent가 `START`, `STOP`, `RESTART` 명령을 실행할 때 대상 모델 프로
 
 | 테이블 | 컬럼 | 현재 타입 | 용도 |
 |---|---|---|---|
-| `TB_M26_COMMAND` | `MODEL_PROCESS_ID` | `VARCHAR(64)` | 명령 대상 모델 프로세스 ID |
+| `TB_M26_MODEL_COMMAND` | `MODEL_PROCESS_ID` | `VARCHAR(64)` | 명령 대상 모델 프로세스 ID |
 | `TB_M26_MODEL_PARAMETER` | `MODEL_PROCESS_ID` | `VARCHAR(64)` | 파라미터 대상 모델 프로세스 ID |
 | `TB_M26_EXECUTION_LOG` | `MODEL_PROCESS_ID` | `VARCHAR(64)` | 실행 이력 대상 모델 프로세스 ID |
 
@@ -86,7 +86,7 @@ vision-monitor와 스키마를 최종 통일할 때는 위 세 테이블의 `MOD
 현재 명령 DML은 숫자 ID를 문자열로 넣습니다.
 
 ```sql
-INSERT INTO TB_M26_COMMAND (
+INSERT INTO TB_M26_MODEL_COMMAND (
     COMMAND_ID,
     AGENT_ID,
     MODEL_PROCESS_ID,
@@ -110,7 +110,7 @@ LIMIT 1;
 
 ## 5. 공통 AUDIT 컬럼
 
-아래 14개 컬럼은 `TB_M26_AGENT`, `TB_M26_MODEL_PROCESS`, `TB_M26_COMMAND`,
+아래 14개 컬럼은 `TB_M26_AGENT`, `TB_M26_MODEL_PROCESS`, `TB_M26_MODEL_COMMAND`,
 `TB_M26_MODEL_PARAMETER`, `TB_M26_EXECUTION_LOG`에 모두 존재해야 합니다.
 
 ```text
@@ -138,7 +138,7 @@ DATA_END_TIMESTAMP
 2. 해당 AGENT_ID의 TB_M26_MODEL_PROCESS 조회
 3. 각 모델 프로세스의 PROCESS_PID 생존 여부 확인
 4. 상태와 헬스 결과를 TB_M26_MODEL_PROCESS에 저장
-5. TB_M26_COMMAND에서 PENDING 명령 조회
+5. TB_M26_MODEL_COMMAND에서 PENDING 명령 조회
 6. MODEL_PROCESS_ID로 모델 프로세스 정의 조회
 7. PYTHON_PROJECT_PATH의 BAT 파일 실행
 8. 실제 python.exe PID 탐색
@@ -172,7 +172,7 @@ SELECT COMMAND_ID,
        COMMAND_STATUS,
        FAILED_REASON,
        PROCESSED_AT
-FROM TB_M26_COMMAND
+FROM TB_M26_MODEL_COMMAND
 ORDER BY CREATED_TIMESTAMP DESC
 LIMIT 20;
 ```

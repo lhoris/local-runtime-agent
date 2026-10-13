@@ -2,16 +2,19 @@
 -- COMMAND_TYPE maps directly to <COMMAND_TYPE>.bat in the Python project.
 
 INSERT INTO TB_M26_MODEL_COMMAND (
+    COMMAND_ID,
+    AGENT_ID,
     MODEL_PROCESS_ID,
-    TARGET_SERVER_IP,
     COMMAND_TYPE,
     COMMAND_STATUS,
-    REQUESTED_BY
+    COMMAND_PARAMETERS
 )
-VALUES (
-    1001,
-    '192.168.0.7',
-    'RESTART',
-    'REQUESTED',
-    'local-smoke-test'
-);
+SELECT UUID(),
+       AGENT_ID,
+       '1001',
+       'RESTART',
+       'PENDING',
+       '{}'
+  FROM TB_M26_AGENT
+ WHERE IP_ADDRESS = '192.168.0.7'
+ LIMIT 1;

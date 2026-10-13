@@ -12,11 +12,9 @@ import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.Agent;
 import com.lra.db.entity.Command;
 import com.lra.db.entity.ExecutionLog;
-import com.lra.db.entity.ModelCommand;
 import com.lra.db.entity.ModelProcess;
 import com.lra.db.repository.ModelProcessRepository;
 import com.lra.db.repository.CommandRepository;
-import com.lra.db.repository.ModelCommandRepository;
 import com.lra.db.repository.ExecutionLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +44,6 @@ class DBSyncManagerTest {
     @Mock private ProcessManager processManager;
     @Mock private ModelProcessRepository modelProcessRepository;
     @Mock private CommandRepository commandRepository;
-    @Mock private ModelCommandRepository modelCommandRepository;
     @Mock private ExecutionLogRepository executionLogRepository;
     @Mock private HealthChecker healthChecker;
     @Mock private ParameterManager parameterManager;
@@ -60,7 +57,6 @@ class DBSyncManagerTest {
                 processManager,
                 modelProcessRepository,
                 commandRepository,
-                null,
                 executionLogRepository);
         when(agentIdentityResolver.resolveOrRegisterCurrentAgentId()).thenReturn(Optional.of(AGENT_ID));
     }
@@ -99,33 +95,16 @@ class DBSyncManagerTest {
     }
 
     @Test
-    void sharedModelCommandStartsProcessAndCompletesQueueRow() {
-        dbSyncManager = new DefaultDBSyncManager(
-                agentIdentityResolver,
-                processManager,
-                modelProcessRepository,
-                commandRepository,
-                modelCommandRepository,
-                executionLogRepository);
-        Agent agent = new Agent();
-        agent.setAgentId(AGENT_ID);
-        agent.setIpAddress("10.20.4.22");
-        when(agentIdentityResolver.resolveOrRegisterCurrentAgent()).thenReturn(Optional.of(agent));
-
-        ModelCommand command = new ModelCommand();
-        command.setProcessId("1");
-        command.setTargetServerIp("10.20.4.22");
-        command.setCommandType("START");
-        command.setCommandStatus("REQUESTED");
-        when(modelCommandRepository.findByTargetServerIpAndCommandStatusOrderByRequestedTimestampAsc(
-                "10.20.4.22", "REQUESTED")).thenReturn(List.of(command));
+    void modelProcessCommandUsesUnifiedCommandQueue() {
+        Command command = command("cmd-model-1", "START", "1");
+        when(commandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
+                .thenReturn(List.of(command));
         when(modelProcessRepository.findById(1L)).thenReturn(Optional.of(new ModelProcess()));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).executeControlCommand(eq("1"), any(ModelProcess.class), eq("START"));
-        verify(modelCommandRepository, org.mockito.Mockito.atLeastOnce()).save(argThat(row ->
-                "COMPLETED".equals(row.getCommandStatus())));
+        verify(processManager).startProcess(eq("1"), any(ModelProcess.class));
+        verify(commandRepository).save(argThat(row -> "COMPLETED".equals(row.getCommandStatus())));
     }
 
     @Test

@@ -18,7 +18,7 @@ import java.util.Objects;
  * A control command queued for an agent to consume (ARCHITECTURE.md §5.1 commands).
  */
 @Entity
-@Table(name = "TB_M26_COMMAND")
+@Table(name = "TB_M26_MODEL_COMMAND")
 public class Command {
 
     @Id
