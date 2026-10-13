@@ -4,6 +4,12 @@
 
 SET @local_ip = '192.168.0.7';
 
+-- Java/Hibernate와 MariaDB의 시간대 기준 확인
+SELECT @@global.time_zone AS GLOBAL_TIME_ZONE,
+       @@session.time_zone AS SESSION_TIME_ZONE,
+       NOW() AS DB_LOCAL_TIME,
+       UTC_TIMESTAMP() AS DB_UTC_TIME;
+
 -- 1. 로컬 IP로 Agent가 등록되었는지 확인
 SELECT '1_AGENT' AS STEP,
        AGENT_ID,
