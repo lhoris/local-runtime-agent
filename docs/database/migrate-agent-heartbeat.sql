@@ -2,8 +2,12 @@
 -- Run this against an existing MariaDB database after taking a backup.
 
 ALTER TABLE TB_M26_AGENT
-    ADD COLUMN IF NOT EXISTS WORKED_AT TIMESTAMP NULL
-        COMMENT 'Timestamp of the latest Agent loop execution';
+    ADD COLUMN IF NOT EXISTS WORKED_AT DATETIME NULL
+            COMMENT 'Local timestamp of the latest Agent loop execution';
+
+ALTER TABLE TB_M26_AGENT
+    MODIFY COLUMN WORKED_AT DATETIME NULL
+        COMMENT 'Local timestamp of the latest Agent loop execution';
 
 SELECT AGENT_ID,
        IP_ADDRESS,

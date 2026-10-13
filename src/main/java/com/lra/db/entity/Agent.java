@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -37,7 +38,7 @@ public class Agent {
     private Instant installedAt;
 
     @Column(name = "WORKED_AT")
-    private Instant workedAt;
+    private LocalDateTime workedAt;
 
     public String getAgentId() {
         return agentId;
@@ -87,11 +88,11 @@ public class Agent {
         this.installedAt = installedAt;
     }
 
-    public Instant getWorkedAt() {
+    public LocalDateTime getWorkedAt() {
         return workedAt;
     }
 
-    public void setWorkedAt(Instant workedAt) {
+    public void setWorkedAt(LocalDateTime workedAt) {
         this.workedAt = workedAt;
     }
 

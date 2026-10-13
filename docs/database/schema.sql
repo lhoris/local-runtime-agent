@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_AGENT (
     IP_ADDRESS VARCHAR(45) COMMENT 'Local IPv4 address used to identify this Agent',
     SPRING_BOOT_VERSION VARCHAR(32) COMMENT 'Spring Boot version reported by the Agent',
     INSTALLED_AT TIMESTAMP NULL COMMENT 'First registration timestamp',
-    WORKED_AT TIMESTAMP NULL COMMENT 'Timestamp of the latest Agent loop execution'
+    WORKED_AT DATETIME NULL COMMENT 'Local timestamp of the latest Agent loop execution'
 ) COMMENT='Local Runtime Agent registration and network identity';
 
 CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (

@@ -5,6 +5,7 @@ import com.lra.db.repository.AgentRepository;
 import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +74,7 @@ public class AgentIdentityResolver {
             Agent agent = existing.get();
             String currentIp = localIps.get(0);
             agent.setIpAddress(currentIp);
-            agent.setWorkedAt(Instant.now());
+            agent.setWorkedAt(LocalDateTime.now());
             Agent saved = agentRepository.save(agent);
             log.info("Agent WORKED_AT updated: agentId={}, workedAt={}, ipAddress={}",
                     saved.getAgentId(), saved.getWorkedAt(), saved.getIpAddress());
@@ -93,7 +94,7 @@ public class AgentIdentityResolver {
         agent.setHostname(hostname);
         agent.setOsType(System.getProperty("os.name", "unknown"));
         agent.setIpAddress(localIps.get(0));
-        agent.setWorkedAt(Instant.now());
+        agent.setWorkedAt(LocalDateTime.now());
         Agent saved = agentRepository.save(agent);
         log.info("Registered local Agent {} with IP {}", saved.getAgentId(), saved.getIpAddress());
         return Optional.of(saved);
