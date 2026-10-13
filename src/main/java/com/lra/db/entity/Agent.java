@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.Objects;
 
 /**
@@ -38,7 +38,7 @@ public class Agent {
     private Instant installedAt;
 
     @Column(name = "WORKED_AT")
-    private LocalDateTime workedAt;
+    private Timestamp workedAt;
 
     public String getAgentId() {
         return agentId;
@@ -88,11 +88,11 @@ public class Agent {
         this.installedAt = installedAt;
     }
 
-    public LocalDateTime getWorkedAt() {
+    public Timestamp getWorkedAt() {
         return workedAt;
     }
 
-    public void setWorkedAt(LocalDateTime workedAt) {
+    public void setWorkedAt(Timestamp workedAt) {
         this.workedAt = workedAt;
     }
 

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.sql.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class AgentIdentityResolver {
 
     private static final Logger log = LoggerFactory.getLogger(AgentIdentityResolver.class);
+    private static final ZoneId DATABASE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final LocalIpResolver localIpResolver;
     private final AgentRepository agentRepository;
@@ -74,7 +77,7 @@ public class AgentIdentityResolver {
             Agent agent = existing.get();
             String currentIp = localIps.get(0);
             agent.setIpAddress(currentIp);
-            agent.setWorkedAt(LocalDateTime.now());
+            agent.setWorkedAt(Timestamp.valueOf(LocalDateTime.now(DATABASE_ZONE)));
             Agent saved = agentRepository.save(agent);
             log.info("Agent WORKED_AT updated: agentId={}, workedAt={}, ipAddress={}",
                     saved.getAgentId(), saved.getWorkedAt(), saved.getIpAddress());
@@ -94,7 +97,7 @@ public class AgentIdentityResolver {
         agent.setHostname(hostname);
         agent.setOsType(System.getProperty("os.name", "unknown"));
         agent.setIpAddress(localIps.get(0));
-        agent.setWorkedAt(LocalDateTime.now());
+        agent.setWorkedAt(Timestamp.valueOf(LocalDateTime.now(DATABASE_ZONE)));
         Agent saved = agentRepository.save(agent);
         log.info("Registered local Agent {} with IP {}", saved.getAgentId(), saved.getIpAddress());
         return Optional.of(saved);
