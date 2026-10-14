@@ -500,15 +500,19 @@ public class DefaultProcessManager implements ProcessManager {
                         pidFileProcess.get().pid(), pidFile(definition));
                 return pidFileProcess;
             }
+            // The process just launched by start.bat is more reliable than a global
+            // command-line match, which may find another Python process first.
+            java.util.Optional<ProcessHandle> startedChild = findDescendant(controlHandle);
+            if (startedChild.isPresent()) {
+                log.info("Python child process found for start.bat: pythonPid={}, cmdPid={}",
+                        startedChild.get().pid(), controlProcess.pid());
+                return startedChild;
+            }
             java.util.Optional<ProcessHandle> commandProcess = findPythonByCommand(definition);
             if (commandProcess.isPresent()) {
                 log.info("DB Python 명령줄로 프로세스 확인: pid={}, pythonCommand={}",
                         commandProcess.get().pid(), definition.getPythonCommand());
                 return commandProcess;
-            }
-            java.util.Optional<ProcessHandle> child = findDescendant(controlHandle);
-            if (child.isPresent()) {
-                return child;
             }
             java.util.Optional<ProcessHandle> matching = findPythonByProjectPath(projectPath);
             if (matching.isPresent()) {
