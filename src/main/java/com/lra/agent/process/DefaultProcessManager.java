@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -544,7 +546,10 @@ public class DefaultProcessManager implements ProcessManager {
     }
 
     private java.util.Optional<ProcessHandle> findPythonByCommand(ModelProcess definition) {
-        String configuredCommand = definition.getPythonCommand();
+        String configuredCommand = readPythonCommandFromStartScript(definition);
+        if (configuredCommand == null || configuredCommand.isBlank()) {
+            configuredCommand = definition.getPythonCommand();
+        }
         if (configuredCommand == null || configuredCommand.isBlank()) {
             return java.util.Optional.empty();
         }
@@ -562,12 +567,38 @@ public class DefaultProcessManager implements ProcessManager {
         if (commandLine.contains(expected)) {
             return true;
         }
-        String script = java.util.Arrays.stream(expected.replace('"', ' ').split("\\s+"))
+        List<String> expectedFiles = java.util.Arrays.stream(expected.replace('"', ' ').split("\\s+"))
                 .map(String::trim)
-                .filter(token -> token.endsWith(".py"))
-                .findFirst()
-                .orElse("");
-        return !script.isBlank() && commandLine.contains(script);
+                .filter(token -> token.endsWith(".py") || token.endsWith(".json"))
+                .toList();
+        return !expectedFiles.isEmpty()
+                && expectedFiles.stream().allMatch(commandLine::contains);
+    }
+
+    private String readPythonCommandFromStartScript(ModelProcess definition) {
+        File startScript = new File(projectDirectory(definition), "start.bat");
+        if (!startScript.isFile()) {
+            return "";
+        }
+        Pattern pythonInvocation = Pattern.compile(
+                "(?i)(?:^|\\s)(python(?:\\.exe)?|py(?:\\.exe)?)(?=\\s|$)");
+        try {
+            for (String rawLine : Files.readAllLines(startScript.toPath())) {
+                String line = rawLine.replace('“', '"').replace('”', '"').trim();
+                if (line.isBlank() || line.startsWith("rem ") || line.startsWith("::")
+                        || line.toLowerCase(java.util.Locale.ROOT).contains("activate.bat")) {
+                    continue;
+                }
+                Matcher matcher = pythonInvocation.matcher(line);
+                if (matcher.find()) {
+                    String command = line.substring(matcher.start()).trim();
+                    return command;
+                }
+            }
+        } catch (IOException ex) {
+            log.warn("start.bat에서 Python 실행 명령을 읽을 수 없음: path={}", startScript, ex);
+        }
+        return "";
     }
 
     private java.util.Optional<ProcessHandle> findPythonFromPidFile(ModelProcess definition) {
