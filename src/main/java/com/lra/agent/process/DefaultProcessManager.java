@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,11 +34,18 @@ public class DefaultProcessManager implements ProcessManager {
 
     /** Grace period before a GRACEFUL stop escalates to a forceful kill. */
     static final long GRACEFUL_TIMEOUT_SEC = 15;
-    private static final long PYTHON_DISCOVERY_TIMEOUT_SEC = 15;
+    private static final long DEFAULT_PYTHON_DISCOVERY_TIMEOUT_SEC = 30;
+    private static final long DEFAULT_PYTHON_DISCOVERY_POLL_MILLIS = 250;
     private static final int DEFAULT_MAX_RESTART_ATTEMPTS = 3;
 
     private final ProcessLauncher launcher;
     private final Map<String, ManagedProcess> processes = new ConcurrentHashMap<>();
+
+    @Value("${agent.process-discovery-timeout-sec:30}")
+    private long pythonDiscoveryTimeoutSec = DEFAULT_PYTHON_DISCOVERY_TIMEOUT_SEC;
+
+    @Value("${agent.process-discovery-poll-ms:250}")
+    private long pythonDiscoveryPollMillis = DEFAULT_PYTHON_DISCOVERY_POLL_MILLIS;
 
     public DefaultProcessManager(ProcessLauncher launcher) {
         this.launcher = launcher;
@@ -492,8 +500,13 @@ public class DefaultProcessManager implements ProcessManager {
         if (controlHandle == null) {
             return java.util.Optional.empty();
         }
-        int attempts = (int) (PYTHON_DISCOVERY_TIMEOUT_SEC * 10);
-        for (int attempt = 0; attempt < attempts; attempt++) {
+        long timeoutMillis = Math.max(1, pythonDiscoveryTimeoutSec) * 1000L;
+        long pollMillis = Math.max(50, pythonDiscoveryPollMillis);
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        long nextProgressLog = System.nanoTime();
+        int attempt = 0;
+        while (System.nanoTime() < deadline) {
+            attempt++;
             java.util.Optional<ProcessHandle> pidFileProcess = findPythonFromPidFile(definition);
             if (pidFileProcess.isPresent()) {
                 log.info("PID 파일로 Python 프로세스 확인: pid={}, pidFile={}",
@@ -518,8 +531,15 @@ public class DefaultProcessManager implements ProcessManager {
             if (matching.isPresent()) {
                 return matching;
             }
-            sleepMillis(100);
+            if (System.nanoTime() >= nextProgressLog) {
+                log.info("Python PID 탐색 대기 중: modelProcessId={}, attempt={}, timeoutSec={}",
+                        definition.getProcessId(), attempt, pythonDiscoveryTimeoutSec);
+                nextProgressLog = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
+            }
+            sleepMillis(pollMillis);
         }
+        log.warn("Python PID 탐색 시간 초과: modelProcessId={}, timeoutSec={}",
+                definition.getProcessId(), pythonDiscoveryTimeoutSec);
         return java.util.Optional.empty();
     }
 
