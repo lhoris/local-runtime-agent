@@ -15,7 +15,7 @@ Agent는 중앙 서버 없이도 자체 동작하는 자율 루프(Autonomous Lo
 - **DB Sync Manager** — 30초 주기 폴링으로 대기 명령(START/STOP/RESTART) 처리
 - **State Manager** — STOPPED → STARTING → RUNNING → STOPPING, 이상 시 CRASHED
 - **Parameter Manager** — JSON 기반 동적 파라미터, 재시작 시 적용
-- **Auto-restart** — crash 감지 시 재시작 횟수 한도 내 자동 복구
+- **Abnormal-state logging** — crash 감지 시 상태와 PID를 기록하며 자동 복구는 수행하지 않음
 
 핵심 흐름: `DB 명령 → 폴링 → ProcessManager 실행 → 상태 갱신 → DB 반영`. 상세는 아래 12개 섹션 참고.
 빌드·실행은 [`../README.md`](../README.md) 참고.

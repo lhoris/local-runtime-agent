@@ -4,7 +4,6 @@ import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
 import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.process.ProcessManager;
-import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
@@ -35,7 +34,6 @@ class AgentMainLoopTest {
     private ModelProcessRepository modelProcessRepository;
     private StateManager stateManager;
     private HealthChecker healthChecker;
-    private ProcessMonitor processMonitor;
     private DBSyncManager dbSyncManager;
 
     private AgentMainLoop loop;
@@ -47,11 +45,10 @@ class AgentMainLoopTest {
         modelProcessRepository = mock(ModelProcessRepository.class);
         stateManager = mock(StateManager.class);
         healthChecker = mock(HealthChecker.class);
-        processMonitor = mock(ProcessMonitor.class);
         dbSyncManager = mock(DBSyncManager.class);
         when(agentIdentityResolver.resolveOrRegisterCurrentAgentId()).thenReturn(java.util.Optional.of("agent-test"));
         loop = new AgentMainLoop(agentIdentityResolver, processManager, modelProcessRepository, stateManager,
-                provider(healthChecker), provider(processMonitor), dbSyncManager);
+                provider(healthChecker), dbSyncManager);
     }
 
     @Test
@@ -63,12 +60,11 @@ class AgentMainLoopTest {
 
         loop.agentLoop();
 
-        var order = inOrder(modelProcessRepository, processManager, healthChecker, processMonitor, dbSyncManager);
+        var order = inOrder(modelProcessRepository, processManager, healthChecker, dbSyncManager);
         order.verify(modelProcessRepository).findByAgentId("agent-test");
         order.verify(processManager).checkStatus(definition);
         order.verify(healthChecker).checkHealth("m1");
         order.verify(healthChecker).detectCrash("m1");
-        order.verify(processMonitor).autoRestart();
         order.verify(dbSyncManager).pollPendingCommands();
         order.verify(dbSyncManager).syncAgentStatus();
     }
@@ -138,7 +134,7 @@ class AgentMainLoopTest {
     @Test
     void missingOptionalComponentsAreSkipped() {
         AgentMainLoop bareLoop = new AgentMainLoop(agentIdentityResolver, processManager, modelProcessRepository, stateManager,
-                emptyProvider(), emptyProvider(), dbSyncManager);
+                emptyProvider(), dbSyncManager);
 
         bareLoop.agentLoop();
 
@@ -164,7 +160,6 @@ class AgentMainLoopTest {
         loop.agentLoop();
 
         verify(processManager, never()).checkStatus(any());
-        verify(processMonitor, never()).autoRestart();
         verify(dbSyncManager, never()).pollPendingCommands();
         verify(dbSyncManager, never()).syncAgentStatus();
     }

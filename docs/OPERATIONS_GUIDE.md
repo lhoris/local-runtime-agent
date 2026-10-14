@@ -270,9 +270,11 @@ FROM TB_M26_MODEL_PROCESS
 WHERE MODEL_PROCESS_ID = 1001;
 ```
 
-## 8. 자동 재시작 확인
+## 8. 비정상 프로세스 확인
 
-먼저 설정을 확인합니다.
+현재 Agent Main Loop는 비정상 프로세스를 감지하고 로그와 DB 상태만 갱신합니다.
+자동 재시작은 수행하지 않으며, 재시작이 필요하면 `RESTART` 명령을 별도로
+등록합니다.
 
 ```sql
 SELECT AUTO_RESTART,
@@ -286,7 +288,7 @@ WHERE MODEL_PROCESS_ID = 1001;
 
 ```text
 Process ... is no longer alive ... marking CRASHED
-Auto-restarting ...
+비정상 프로세스 감지 ...
 ```
 
 DB에서는 다음을 확인합니다.
@@ -299,7 +301,8 @@ FROM TB_M26_MODEL_PROCESS
 WHERE MODEL_PROCESS_ID = 1001;
 ```
 
-`AUTO_RESTART = FALSE`이면 자동 재시작하지 않고 `STOPPED`로 남습니다.
+`AUTO_RESTART` 값은 현재 Main Loop의 자동 복구를 활성화하지 않습니다. 재시작은
+DB의 `RESTART` 명령으로 명시적으로 요청해야 합니다.
 
 ## 9. 정상 동작 최종 확인
 

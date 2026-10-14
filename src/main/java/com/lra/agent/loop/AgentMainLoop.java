@@ -4,7 +4,6 @@ import com.lra.agent.health.HealthCheckException;
 import com.lra.agent.health.HealthChecker;
 import com.lra.agent.identity.AgentIdentityResolver;
 import com.lra.agent.process.ProcessManager;
-import com.lra.agent.process.ProcessMonitor;
 import com.lra.agent.process.ProcessStatus;
 import com.lra.agent.state.InvalidStateTransitionException;
 import com.lra.agent.state.StateManager;
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Component;
  * Periodic agent loop.
  *
  * <p>The order is intentionally plain: load the model-process rows this agent
- * owns, check those rows against the local runtime, recover what can be recovered,
+ * owns, check those rows against the local runtime, record abnormal states,
  * execute new commands, then publish the latest status.
  */
 @Component
@@ -39,7 +38,6 @@ public class AgentMainLoop {
     private final ModelProcessRepository modelProcessRepository;
     private final StateManager stateManager;
     private final ObjectProvider<HealthChecker> healthCheckerProvider;
-    private final ObjectProvider<ProcessMonitor> processMonitorProvider;
     private final DBSyncManager dbSyncManager;
 
     public AgentMainLoop(AgentIdentityResolver agentIdentityResolver,
@@ -47,14 +45,12 @@ public class AgentMainLoop {
                          ModelProcessRepository modelProcessRepository,
                          StateManager stateManager,
                          ObjectProvider<HealthChecker> healthCheckerProvider,
-                         ObjectProvider<ProcessMonitor> processMonitorProvider,
                          DBSyncManager dbSyncManager) {
         this.agentIdentityResolver = agentIdentityResolver;
         this.processManager = processManager;
         this.modelProcessRepository = modelProcessRepository;
         this.stateManager = stateManager;
         this.healthCheckerProvider = healthCheckerProvider;
-        this.processMonitorProvider = processMonitorProvider;
         this.dbSyncManager = dbSyncManager;
     }
 
@@ -86,8 +82,8 @@ public class AgentMainLoop {
         healthCheckRunningProcesses(statuses);
         log.info("[5/7] 비정상 종료 및 안전하지 않은 프로세스 감지");
         detectUnsafeProcesses(statuses);
-        log.info("[6/7] 장애 프로세스 복구 및 대기 명령 조회/처리");
-        recoverCrashedProcesses();
+        log.info("[6/7] 비정상 프로세스 상태 기록 및 대기 명령 조회/처리");
+        logAbnormalProcessStates(statuses);
         pollPendingCommands();
         log.info("[7/7] 프로세스 상태와 Agent heartbeat를 DB에 동기화");
         publishCurrentStatus();
@@ -172,16 +168,14 @@ public class AgentMainLoop {
         }
     }
 
-    /** Step 5: restart crashed processes when their row allows auto-restart. */
-    private void recoverCrashedProcesses() {
-        ProcessMonitor processMonitor = processMonitorProvider.getIfAvailable();
-        if (processMonitor == null) {
-            return;
-        }
-        try {
-            processMonitor.autoRestart();
-        } catch (RuntimeException ex) {
-            log.warn("Auto-restart step failed", ex);
+    /** Step 5: report abnormal states without changing the process lifecycle. */
+    private void logAbnormalProcessStates(List<ProcessStatus> statuses) {
+        for (ProcessStatus status : statuses) {
+            if (status.getState() == ProcessState.CRASHED
+                    || status.getState() == ProcessState.UNHEALTHY) {
+                log.warn("비정상 프로세스 감지: modelProcessId={}, state={}, pid={}, error={}",
+                        status.getModelId(), status.getState(), status.getPid(), status.getErrorMessage());
+            }
         }
     }
 

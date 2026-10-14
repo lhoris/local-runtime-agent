@@ -11,7 +11,7 @@ Windows Service / Linux systemd 로 상시 구동하도록 설계되었다.
 3. **DB 명령 폴링** — 기본 30초 주기로 대기 명령(START/STOP/RESTART) 처리
 4. **파라미터 관리** — JSON 기반 동적 파라미터, 재시작 시 적용
 5. **상태 머신** — STOPPED → STARTING → RUNNING → STOPPING, 이상 시 CRASHED
-6. **자동 재시작** — crash 감지 시 재시작 횟수 한도 내 자동 복구
+6. **비정상 상태 기록** — crash 감지 시 상태와 PID를 기록하며 자동 복구는 수행하지 않음
 
 ## 기술 스택
 
@@ -51,7 +51,7 @@ com.lra
 ```
 
 단위 테스트와 E2E 통합 테스트(`SystemIntegrationTest`, 4개 시나리오: 상태 등록/폴링, 명령 발행/실행,
-파라미터 변경 후 재시작, crash 감지/자동 재시작)를 포함한다.
+파라미터 변경 후 재시작, crash 감지/상태 기록)를 포함한다.
 
 ## 설정 (Configuration)
 
