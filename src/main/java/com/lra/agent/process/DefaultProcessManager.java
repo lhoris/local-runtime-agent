@@ -505,8 +505,14 @@ public class DefaultProcessManager implements ProcessManager {
         long timeoutMillis = Math.max(1, pythonDiscoveryTimeoutSec) * 1000L;
         long pollMillis = Math.max(50, pythonDiscoveryPollMillis);
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        long discoveryStartedAt = System.nanoTime();
         long nextProgressLog = System.nanoTime();
         int attempt = 0;
+        log.info("Python PID discovery started: modelProcessId={}, cmdPid={}, projectPath={}, "
+                        + "startBatPythonCommand={}, dbPythonCommand={}, timeoutSec={}, pollMs={}",
+                definition.getProcessId(), controlProcess.pid(), definition.getPythonProjectPath(),
+                readPythonCommandFromStartScript(definition), definition.getPythonCommand(),
+                pythonDiscoveryTimeoutSec, pollMillis);
         while (System.nanoTime() < deadline) {
             attempt++;
             java.util.Optional<ProcessHandle> pidFileProcess = findPythonFromPidFile(definition);
@@ -519,21 +525,28 @@ public class DefaultProcessManager implements ProcessManager {
             // command-line match, which may find another Python process first.
             java.util.Optional<ProcessHandle> startedChild = findMatchingDescendant(controlHandle, definition);
             if (startedChild.isPresent()) {
-                log.info("Python child process matched for start.bat: pythonPid={}, cmdPid={}, pythonCommand={}",
-                        startedChild.get().pid(), controlProcess.pid(), definition.getPythonCommand());
+                log.info("cmd child Python matched: pythonPid={}, cmdPid={}, commandLine={}",
+                        startedChild.get().pid(), controlProcess.pid(), commandLine(startedChild.get()));
                 return startedChild;
             }
             java.util.Optional<ProcessHandle> commandProcess = findPythonByCommand(definition);
             if (commandProcess.isPresent()) {
+                log.info("Python command-line candidate matched: pid={}, commandLine={}",
+                        commandProcess.get().pid(), commandLine(commandProcess.get()));
                 log.info("DB Python 명령줄로 프로세스 확인: pid={}, pythonCommand={}",
                         commandProcess.get().pid(), definition.getPythonCommand());
                 return commandProcess;
             }
             java.util.Optional<ProcessHandle> matching = findPythonByProjectPath(projectPath);
             if (matching.isPresent()) {
+                log.info("Python project-path candidate matched: pid={}, commandLine={}",
+                        matching.get().pid(), commandLine(matching.get()));
                 return matching;
             }
             if (System.nanoTime() >= nextProgressLog) {
+                log.info("Python PID discovery waiting: modelProcessId={}, attempt={}, elapsedMs={}",
+                        definition.getProcessId(), attempt,
+                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - discoveryStartedAt));
                 log.info("Python PID 탐색 대기 중: modelProcessId={}, attempt={}, timeoutSec={}",
                         definition.getProcessId(), attempt, pythonDiscoveryTimeoutSec);
                 nextProgressLog = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
@@ -555,8 +568,14 @@ public class DefaultProcessManager implements ProcessManager {
         }
         String expected = normalize(configuredCommand);
         return ProcessHandle.allProcesses()
-                .filter(handle -> isPython(handle)
-                        && handle.info().commandLine()
+                .filter(this::isPython)
+                .peek(handle -> log.debug("Python command candidate: pid={}, matched={}, commandLine={}",
+                        handle.pid(), handle.info().commandLine()
+                                .map(this::normalize)
+                                .map(commandLine -> matchesCommand(commandLine, expected))
+                                .orElse(false),
+                        commandLine(handle)))
+                .filter(handle -> handle.info().commandLine()
                         .map(this::normalize)
                         .map(commandLine -> matchesCommand(commandLine, expected))
                         .orElse(false))
@@ -573,6 +592,10 @@ public class DefaultProcessManager implements ProcessManager {
                 .toList();
         return !expectedFiles.isEmpty()
                 && expectedFiles.stream().allMatch(commandLine::contains);
+    }
+
+    private String commandLine(ProcessHandle handle) {
+        return handle.info().commandLine().orElse("<조회 불가>");
     }
 
     private String readPythonCommandFromStartScript(ModelProcess definition) {
@@ -662,11 +685,16 @@ public class DefaultProcessManager implements ProcessManager {
     private boolean matchesDefinition(ProcessHandle handle, ModelProcess definition) {
         String commandLine = handle.info().commandLine().map(this::normalize).orElse("");
         String configuredCommand = normalize(definition.getPythonCommand());
-        if (!configuredCommand.isBlank() && matchesCommand(commandLine, configuredCommand)) {
+        boolean commandMatched = !configuredCommand.isBlank()
+                && matchesCommand(commandLine, configuredCommand);
+        String projectPath = normalize(definition.getPythonProjectPath());
+        boolean projectMatched = !projectPath.isBlank() && commandLine.contains(projectPath);
+        log.debug("cmd child Python candidate: pid={}, commandMatched={}, projectMatched={}, commandLine={}",
+                handle.pid(), commandMatched, projectMatched, commandLine);
+        if (commandMatched) {
             return true;
         }
-        String projectPath = normalize(definition.getPythonProjectPath());
-        return !projectPath.isBlank() && commandLine.contains(projectPath);
+        return projectMatched;
     }
 
     private void sleepMillis(long millis) {
