@@ -219,8 +219,9 @@ The command queue uses `COMMAND_TYPE` as the control script name. The Agent
 executes the matching control script from `PYTHON_PROJECT_PATH`.
 
 - `START` executes `start.bat`.
-- `STOP` executes `stop.bat`.
-- `RESTART` executes `restart.bat`.
+- `STOP` executes `stop.bat <현재 Python PID>`.
+- `RESTART` executes `restart.bat <기존 Python PID>`.
+- Agent가 관리 중인 `TB_M26_MODEL_PROCESS.PROCESS_PID` 값을 배치 파일의 첫 번째 인자로 전달하므로, 배치 파일이 별도로 실행 중인 프로세스를 검색할 필요가 없습니다.
 - A custom value such as `CUSTOM1` executes `custom1.bat`.
 
 Only letters, digits, underscores, and hyphens are accepted in command types;

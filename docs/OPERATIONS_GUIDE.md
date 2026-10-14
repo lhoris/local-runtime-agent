@@ -159,7 +159,7 @@ Linux 실행 파일은 예를 들어 다음처럼 등록합니다.
 
 ```sql
 -- The project directory must contain start.bat, stop.bat, and restart.bat.
--- The Agent invokes those scripts directly.
+-- STOP and RESTART receive the managed Python PID as the first argument.
 ```
 
 다음 SQL로 Agent에 할당된 감시 대상이 보이는지 확인합니다.

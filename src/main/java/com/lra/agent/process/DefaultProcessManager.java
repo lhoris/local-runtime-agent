@@ -165,8 +165,8 @@ public class DefaultProcessManager implements ProcessManager {
         transition(mp, ProcessState.STOPPING);
         try {
             if (mp.getDefinition() != null) {
-                log.info("STOP 명령 실행: modelProcessId={}, stop.bat 호출", modelId);
-                runControlScript(mp.getDefinition(), "stop.bat");
+                log.info("STOP 명령 실행: modelProcessId={}, pid={}, stop.bat 호출", modelId, mp.getPid());
+                runControlScript(mp.getDefinition(), "stop.bat", scriptArguments(mp.getPid()));
             } else {
                 stopAliveProcess(mp, strategy);
             }
@@ -193,8 +193,9 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
         try {
-            log.info("RESTART 명령 실행: modelProcessId={}, restart.bat 호출", modelId);
-            Process process = runControlScript(definition, "restart.bat");
+            log.info("RESTART 명령 실행: modelProcessId={}, oldPid={}, restart.bat 호출",
+                    modelId, mp.getPid());
+            Process process = runControlScript(definition, "restart.bat", scriptArguments(mp.getPid()));
             attachStartedPythonProcess(mp, definition, process);
             if (mp.isAlive()) {
                 transition(mp, ProcessState.RUNNING);
@@ -316,6 +317,15 @@ public class DefaultProcessManager implements ProcessManager {
         return List.of("cmd.exe", "/c", scriptName);
     }
 
+    private List<String> controlScriptCommand(String scriptName, List<String> arguments) {
+        List<String> command = new ArrayList<>();
+        command.add("cmd.exe");
+        command.add("/c");
+        command.add(scriptName);
+        command.addAll(arguments);
+        return command;
+    }
+
     private String normalizeCommandType(String commandType) {
         String normalized = commandType == null ? "" : commandType.trim().toLowerCase(java.util.Locale.ROOT);
         if (!normalized.matches("[a-z0-9][a-z0-9_-]{0,19}")) {
@@ -325,13 +335,24 @@ public class DefaultProcessManager implements ProcessManager {
     }
 
     private Process runControlScript(ModelProcess definition, String scriptName) throws Exception {
+        return runControlScript(definition, scriptName, List.of());
+    }
+
+    private Process runControlScript(ModelProcess definition,
+                                     String scriptName,
+                                     List<String> arguments) throws Exception {
         File directory = projectDirectory(definition);
         File script = new File(directory, scriptName);
         if (!script.isFile()) {
             throw new IllegalStateException("Required control script is missing: " + script);
         }
-        log.info("제어 스크립트 실행: script={}, workingDirectory={}", script.getName(), directory);
-        return launcher.launch(controlScriptCommand(scriptName), directory, Map.of());
+        log.info("제어 스크립트 실행: script={}, arguments={}, workingDirectory={}",
+                script.getName(), arguments, directory);
+        return launcher.launch(controlScriptCommand(scriptName, arguments), directory, Map.of());
+    }
+
+    private List<String> scriptArguments(Integer pid) {
+        return pid == null ? List.of() : List.of(String.valueOf(pid));
     }
 
     private java.util.Optional<ProcessHandle> findMatchingProcess(ModelProcess definition) {

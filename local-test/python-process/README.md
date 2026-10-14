@@ -9,8 +9,8 @@ C:/workspace/github/local-runtime-agent/local-test/python-process
 The Agent controls the process with:
 
 - `start.bat`: starts `test_process.py` in the foreground
-- `stop.bat`: reads `python_process.pid` and stops the Python process
-- `restart.bat`: stops and starts the Python process again
+- `stop.bat <PID>`: stops the Python process by the PID passed by the Agent
+- `restart.bat <PID>`: stops the old PID and starts the Python process again
 
 The Python process writes its own PID and heartbeat messages to:
 
@@ -33,13 +33,13 @@ type python_process.log
 Stop it with:
 
 ```bat
-stop.bat
+stop.bat 12345
 ```
 
-The Agent stores the PID of the foreground `cmd.exe` wrapper started for
-`start.bat`. Because the Python process stays in the foreground, the wrapper
-also exits when the Python process exits, so PID liveness is useful for the
-Agent's local smoke test.
+The Agent stores the actual Python PID discovered after `start.bat` starts.
+When it executes `stop.bat` or `restart.bat`, it passes that PID as the first
+argument. Running `stop.bat` without an argument still falls back to the local
+`python_process.pid` file for manual testing.
 
 `start.bat` uses `py -3` instead of the bare `python` command. On Windows,
 the bare command can resolve to the Microsoft Store execution alias instead

@@ -109,6 +109,10 @@ class ProcessManagerTest {
         manager.stopProcess("m1", StopStrategy.GRACEFUL);
 
         verify(launcher, times(2)).launch(any(), any(), any());
+        verify(launcher).launch(
+                org.mockito.ArgumentMatchers.argThat(command ->
+                        command.contains("stop.bat") && command.contains("1234")),
+                any(), any());
         verify(proc, never()).destroyForcibly();
         assertThat(manager.getStatus("m1").getState()).isEqualTo(ProcessState.STOPPED);
     }
