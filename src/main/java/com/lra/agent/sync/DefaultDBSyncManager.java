@@ -178,8 +178,9 @@ public class DefaultDBSyncManager implements DBSyncManager {
         } else switch (type) {
             case START -> processManager.startProcess(modelId, requireProcess(modelId));
             case ATTACH -> processManager.attachExistingProcess(modelId, requireProcess(modelId));
-            case STOP -> processManager.stopProcess(modelId, StopStrategy.GRACEFUL);
-            case RESTART -> processManager.restartProcess(modelId);
+            case STOP -> processManager.stopProcess(
+                    modelId, requireProcess(modelId), StopStrategy.GRACEFUL);
+            case RESTART -> processManager.restartProcess(modelId, requireProcess(modelId));
             case PARAM_UPDATE -> {
                 if (parameterManager == null) {
                     throw new IllegalStateException("ParameterManager is not available");
@@ -191,7 +192,7 @@ public class DefaultDBSyncManager implements DBSyncManager {
                         parameterManager.updateParameter(modelId, entry.getKey(), value);
                     }
                 }
-                processManager.restartProcess(modelId);
+                processManager.restartProcess(modelId, requireProcess(modelId));
             }
             case HEALTH_CHECK -> {
                 if (healthChecker == null) {

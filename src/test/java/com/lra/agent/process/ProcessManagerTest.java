@@ -130,6 +130,37 @@ class ProcessManagerTest {
     }
 
     @Test
+    void stopProcess_withLatestDefinition_passesDatabasePidToScript() throws Exception {
+        Process proc = aliveProcess(1234L);
+        when(launcher.launch(any(), any(), any())).thenReturn(proc);
+        ModelProcess latest = config(true, 3);
+        latest.setPid(5678);
+        manager.startProcess("m1", config(true, 3));
+
+        manager.stopProcess("m1", latest, StopStrategy.GRACEFUL);
+
+        verify(launcher).launch(
+                org.mockito.ArgumentMatchers.argThat(command ->
+                        command.contains("stop.bat") && command.contains("5678")),
+                any(), any());
+    }
+
+    @Test
+    void stopProcess_whenScriptFails_keepsRunningStateAndRaisesFailure() throws Exception {
+        Process proc = aliveProcess(1234L);
+        when(proc.exitValue()).thenReturn(1);
+        when(launcher.launch(any(), any(), any())).thenReturn(proc);
+        manager.startProcess("m1", config(true, 3));
+
+        assertThatThrownBy(() -> manager.stopProcess("m1", StopStrategy.GRACEFUL))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("exitCode=1");
+
+        assertThat(manager.getStatus("m1").getState()).isEqualTo(ProcessState.RUNNING);
+        assertThat(manager.getStatus("m1").getErrorMessage()).contains("중지 실패");
+    }
+
+    @Test
     void getStatus_unknownModel_returnsNull() {
         assertThat(manager.getStatus("nope")).isNull();
     }

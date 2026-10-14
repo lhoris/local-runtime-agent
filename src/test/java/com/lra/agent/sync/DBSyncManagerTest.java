@@ -165,12 +165,15 @@ class DBSyncManagerTest {
                 .thenReturn(List.of(failing, succeeding));
         when(modelProcessRepository.findById(1L))
                 .thenReturn(Optional.of(new ModelProcess()));
+        when(modelProcessRepository.findById(2L))
+                .thenReturn(Optional.of(new ModelProcess()));
         doThrow(new RuntimeException("boom"))
                 .when(processManager).startProcess(eq("1"), any(ModelProcess.class));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(processManager).stopProcess("2", StopStrategy.GRACEFUL);
+        verify(processManager).stopProcess(
+                eq("2"), any(ModelProcess.class), eq(StopStrategy.GRACEFUL));
         verify(modelCommandRepository).save(argThat(c -> c.getCommandId().equals("cmd-2")
                 && c.getCommandStatus().equals("COMPLETED")));
     }
@@ -202,15 +205,17 @@ class DBSyncManagerTest {
     @Test
     void paramUpdateAppliesEachKeyThenRestarts() throws ValidationException {
         dbSyncManager.setParameterManager(parameterManager);
-        ModelCommand cmd = command("cmd-1", "PARAM_UPDATE", "model-1");
+        ModelCommand cmd = command("cmd-1", "PARAM_UPDATE", "1");
         cmd.setParameters(Map.of("ARG_batch_size", 32));
         when(modelCommandRepository.findByAgentIdAndCommandStatus(AGENT_ID, "PENDING"))
                 .thenReturn(List.of(cmd));
+        when(modelProcessRepository.findById(1L))
+                .thenReturn(Optional.of(new ModelProcess()));
 
         dbSyncManager.pollPendingCommands();
 
-        verify(parameterManager).updateParameter("model-1", "ARG_batch_size", "32");
-        verify(processManager).restartProcess("model-1");
+        verify(parameterManager).updateParameter("1", "ARG_batch_size", "32");
+        verify(processManager).restartProcess(eq("1"), any(ModelProcess.class));
         verify(modelCommandRepository).save(argThat(c -> c.getCommandStatus().equals("COMPLETED")));
     }
 

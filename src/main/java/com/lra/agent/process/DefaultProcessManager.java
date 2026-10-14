@@ -82,8 +82,12 @@ public class DefaultProcessManager implements ProcessManager {
         for (String modelId : new ArrayList<>(processes.keySet())) {
             if (!configuredIds.contains(modelId)) {
                 log.info("Removing process {} because it is no longer configured for this agent", modelId);
-                stopProcess(modelId, StopStrategy.GRACEFUL);
-                processes.remove(modelId);
+                try {
+                    stopProcess(modelId, StopStrategy.GRACEFUL);
+                    processes.remove(modelId);
+                } catch (RuntimeException e) {
+                    log.error("프로세스 제거 전 중지 실패: modelProcessId={}, reason={}", modelId, e.getMessage());
+                }
             }
         }
     }
@@ -158,26 +162,49 @@ public class DefaultProcessManager implements ProcessManager {
     @Override
     public void stopProcess(String modelId, StopStrategy strategy) {
         ManagedProcess mp = processes.get(modelId);
-        if (mp == null || !mp.isAlive()) {
+        if (mp == null) {
             log.warn("stopProcess ignored, {} is not managed", modelId);
             return;
+        }
+        if (mp.getDefinition() == null && !mp.isAlive()) {
+            log.warn("stopProcess ignored, {} is not alive", modelId);
+            return;
+        }
+        if (mp.getDefinition() != null && mp.getPid() == null) {
+            throw new IllegalStateException("중지할 PID가 없습니다: modelProcessId=" + modelId);
         }
         transition(mp, ProcessState.STOPPING);
         try {
             if (mp.getDefinition() != null) {
                 log.info("STOP 명령 실행: modelProcessId={}, pid={}, stop.bat 호출", modelId, mp.getPid());
-                runControlScript(mp.getDefinition(), "stop.bat", scriptArguments(mp.getPid()));
+                Process controlProcess = runControlScript(
+                        mp.getDefinition(), "stop.bat", scriptArguments(mp.getPid()));
+                int exitCode = waitForControlScript(controlProcess, "stop.bat");
+                if (exitCode != 0) {
+                    throw new IllegalStateException("stop.bat 종료 코드가 0이 아님 (exitCode=" + exitCode + ")");
+                }
             } else {
                 stopAliveProcess(mp, strategy);
             }
+            transition(mp, ProcessState.STOPPED);
         } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            log.warn("Failed to stop process {}: {}", modelId, e.getMessage());
-        } finally {
-            transition(mp, ProcessState.STOPPED);
+            String reason = "프로세스 중지 실패: " + e.getMessage();
+            mp.setErrorMessage(reason);
+            ProcessState actualState = mp.isAlive() ? ProcessState.RUNNING : ProcessState.STOPPED;
+            transition(mp, actualState);
+            log.error("STOP 실패: modelProcessId={}, pid={}, state={}, reason={}",
+                    modelId, mp.getPid(), actualState, reason, e);
+            throw new IllegalStateException(reason, e);
         }
+    }
+
+    @Override
+    public void stopProcess(String modelId, ModelProcess definition, StopStrategy strategy) {
+        ManagedProcess mp = useLatestDefinition(modelId, definition);
+        stopProcess(modelId, strategy);
     }
 
     @Override
@@ -211,6 +238,12 @@ public class DefaultProcessManager implements ProcessManager {
             transition(mp, ProcessState.STOPPED);
             throw new IllegalStateException("RESTART failed for " + modelId + ": " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void restartProcess(String modelId, ModelProcess definition) {
+        useLatestDefinition(modelId, definition);
+        restartProcess(modelId);
     }
 
     @Override
@@ -353,6 +386,29 @@ public class DefaultProcessManager implements ProcessManager {
 
     private List<String> scriptArguments(Integer pid) {
         return pid == null ? List.of() : List.of(String.valueOf(pid));
+    }
+
+    private int waitForControlScript(Process controlProcess, String scriptName) throws Exception {
+        if (!controlProcess.waitFor(GRACEFUL_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+            controlProcess.destroyForcibly();
+            throw new IllegalStateException(scriptName + " 실행이 제한 시간 내 종료되지 않음");
+        }
+        int exitCode = controlProcess.exitValue();
+        log.info("제어 스크립트 종료: script={}, exitCode={}", scriptName, exitCode);
+        return exitCode;
+    }
+
+    private ManagedProcess useLatestDefinition(String modelId, ModelProcess definition) {
+        if (definition == null) {
+            throw new IllegalArgumentException("process definition must not be null for " + modelId);
+        }
+        ManagedProcess managed = processes.computeIfAbsent(
+                modelId, id -> new ManagedProcess(id, definition));
+        managed.setDefinition(definition);
+        managed.setPid(definition.getPid());
+        managed.setProcess(null);
+        log.info("최신 MODEL_PROCESS 반영: modelProcessId={}, pid={}", modelId, definition.getPid());
+        return managed;
     }
 
     private java.util.Optional<ProcessHandle> findMatchingProcess(ModelProcess definition) {

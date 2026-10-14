@@ -23,8 +23,14 @@ public interface ProcessManager {
     /** Terminate the process for {@code modelId} using the given strategy. */
     void stopProcess(String modelId, StopStrategy strategy);
 
+    /** Terminate using the latest database definition and PID. */
+    void stopProcess(String modelId, ModelProcess definition, StopStrategy strategy);
+
     /** Gracefully stop then start the process for {@code modelId}. */
     void restartProcess(String modelId);
+
+    /** Restart using the latest database definition and PID. */
+    void restartProcess(String modelId, ModelProcess definition);
 
     /** Execute a control script named {@code commandType}.bat for the process. */
     void executeControlCommand(String modelId, ModelProcess definition, String commandType);
