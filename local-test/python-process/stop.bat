@@ -11,5 +11,9 @@ if not defined PYTHON_PID (
 
 echo Stopping test Python process PID %PYTHON_PID%...
 taskkill /PID %PYTHON_PID% /T /F >nul 2>&1
+if errorlevel 1 (
+    echo Failed to stop Python process PID %PYTHON_PID%.
+    exit /b %errorlevel%
+)
 del /q "python_process.pid" >nul 2>&1
 endlocal

@@ -187,6 +187,9 @@ public class DefaultProcessManager implements ProcessManager {
                 stopAliveProcess(mp, strategy);
             }
             transition(mp, ProcessState.STOPPED);
+            mp.setPid(null);
+            mp.setProcess(null);
+            log.info("STOP 완료: modelProcessId={}, 프로세스 PID를 null로 정리", modelId);
         } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -226,6 +229,7 @@ public class DefaultProcessManager implements ProcessManager {
             attachStartedPythonProcess(mp, definition, process);
             if (mp.isAlive()) {
                 transition(mp, ProcessState.RUNNING);
+                log.info("RESTART 완료: modelProcessId={}, newPythonPid={}", modelId, mp.getPid());
             } else {
                 String reason = "프로세스가 재시작 직후 종료됨 (PID=" + mp.getPid() + ")";
                 mp.setErrorMessage(reason);

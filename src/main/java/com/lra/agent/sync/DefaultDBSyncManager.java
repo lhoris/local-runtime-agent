@@ -123,10 +123,15 @@ public class DefaultDBSyncManager implements DBSyncManager {
 
         for (ModelCommand cmd : commands) {
             long startMillis = System.currentTimeMillis();
-            log.info("명령 처리 시작: commandId={}, type={}, modelProcessId={}",
+            log.info("명령 감지: commandId={}, type={}, modelProcessId={}",
                     cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
             try {
                 ExecutionResult result = executeCommand(cmd);
+                ProcessStatus status = processManager.getStatus(cmd.getProcessId());
+                log.info("명령 실행 후 PID 확인: commandId={}, type={}, modelProcessId={}, state={}, 저장할 PID={}",
+                        cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId(),
+                        status != null ? status.getState() : null,
+                        status != null ? status.getPid() : null);
                 cmd.setCommandStatus(CommandStatus.COMPLETED.name());
                 cmd.setProcessedAt(databaseNow());
                 modelCommandRepository.save(cmd);
@@ -134,8 +139,13 @@ public class DefaultDBSyncManager implements DBSyncManager {
                 log.info("명령 처리 완료: commandId={}, type={}, modelProcessId={}, status=COMPLETED",
                         cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId());
             } catch (Exception e) {
+                ProcessStatus status = processManager.getStatus(cmd.getProcessId());
                 log.warn("명령 처리 실패: commandId={}, type={}, modelProcessId={}, reason={}",
                         cmd.getCommandId(), cmd.getCommandType(), cmd.getProcessId(), e.getMessage());
+                log.info("실패 후 PID 확인: commandId={}, modelProcessId={}, state={}, 저장할 PID={}",
+                        cmd.getCommandId(), cmd.getProcessId(),
+                        status != null ? status.getState() : null,
+                        status != null ? status.getPid() : null);
                 cmd.setCommandStatus(CommandStatus.FAILED.name());
                 cmd.setProcessedAt(databaseNow());
                 cmd.setFailedReason(e.getMessage());
@@ -202,6 +212,10 @@ public class DefaultDBSyncManager implements DBSyncManager {
             }
         }
 
+        ProcessStatus status = processManager.getStatus(modelId);
+        log.info("명령 실행 분기 완료: type={}, modelProcessId={}, state={}, 현재 PID={}",
+                type, modelId, status != null ? status.getState() : null,
+                status != null ? status.getPid() : null);
         int durationSec = (int) ((System.currentTimeMillis() - startMillis) / 1000);
         return ExecutionResult.success(cmd.getCommandId(), modelId, cmd.getCommandType(), durationSec);
     }
