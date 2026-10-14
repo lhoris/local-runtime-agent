@@ -16,6 +16,10 @@ The Agent controls the process with:
 - `stop.bat <PID>`: stops the Python process by the PID passed by the Agent
 - `restart.bat <PID>`: stops the old PID and starts the Python process again
 
+For the complete batch-script contract, including Miniconda, PID files,
+exit codes, diagnostics, and SQL verification, see
+[`BAT_SCRIPT_GUIDE.md`](BAT_SCRIPT_GUIDE.md).
+
 The Python process writes its own PID and heartbeat messages to:
 
 - `.agent.pid`
