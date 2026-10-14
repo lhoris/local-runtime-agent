@@ -515,10 +515,10 @@ public class DefaultProcessManager implements ProcessManager {
             }
             // The process just launched by start.bat is more reliable than a global
             // command-line match, which may find another Python process first.
-            java.util.Optional<ProcessHandle> startedChild = findDescendant(controlHandle);
+            java.util.Optional<ProcessHandle> startedChild = findMatchingDescendant(controlHandle, definition);
             if (startedChild.isPresent()) {
-                log.info("Python child process found for start.bat: pythonPid={}, cmdPid={}",
-                        startedChild.get().pid(), controlProcess.pid());
+                log.info("Python child process matched for start.bat: pythonPid={}, cmdPid={}, pythonCommand={}",
+                        startedChild.get().pid(), controlProcess.pid(), definition.getPythonCommand());
                 return startedChild;
             }
             java.util.Optional<ProcessHandle> commandProcess = findPythonByCommand(definition);
@@ -553,9 +553,21 @@ public class DefaultProcessManager implements ProcessManager {
                 .filter(handle -> isPython(handle)
                         && handle.info().commandLine()
                         .map(this::normalize)
-                        .map(commandLine -> commandLine.contains(expected))
+                        .map(commandLine -> matchesCommand(commandLine, expected))
                         .orElse(false))
                 .findFirst();
+    }
+
+    private boolean matchesCommand(String commandLine, String expected) {
+        if (commandLine.contains(expected)) {
+            return true;
+        }
+        String script = java.util.Arrays.stream(expected.replace('"', ' ').split("\\s+"))
+                .map(String::trim)
+                .filter(token -> token.endsWith(".py"))
+                .findFirst()
+                .orElse("");
+        return !script.isBlank() && commandLine.contains(script);
     }
 
     private java.util.Optional<ProcessHandle> findPythonFromPidFile(ModelProcess definition) {
@@ -602,17 +614,28 @@ public class DefaultProcessManager implements ProcessManager {
                 .findFirst();
     }
 
-    private java.util.Optional<ProcessHandle> findDescendant(ProcessHandle parent) {
+    private java.util.Optional<ProcessHandle> findMatchingDescendant(ProcessHandle parent,
+                                                                      ModelProcess definition) {
         for (ProcessHandle child : parent.children().toList()) {
-            if (isPython(child)) {
+            if (isPython(child) && matchesDefinition(child, definition)) {
                 return java.util.Optional.of(child);
             }
-            java.util.Optional<ProcessHandle> descendant = findDescendant(child);
+            java.util.Optional<ProcessHandle> descendant = findMatchingDescendant(child, definition);
             if (descendant.isPresent()) {
                 return descendant;
             }
         }
         return java.util.Optional.empty();
+    }
+
+    private boolean matchesDefinition(ProcessHandle handle, ModelProcess definition) {
+        String commandLine = handle.info().commandLine().map(this::normalize).orElse("");
+        String configuredCommand = normalize(definition.getPythonCommand());
+        if (!configuredCommand.isBlank() && matchesCommand(commandLine, configuredCommand)) {
+            return true;
+        }
+        String projectPath = normalize(definition.getPythonProjectPath());
+        return !projectPath.isBlank() && commandLine.contains(projectPath);
     }
 
     private void sleepMillis(long millis) {
