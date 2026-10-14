@@ -3,6 +3,9 @@ package com.lra.agent.process;
 import com.lra.common.enums.ProcessState;
 import com.lra.db.entity.ModelProcess;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -462,6 +465,12 @@ public class DefaultProcessManager implements ProcessManager {
         }
         int attempts = (int) (PYTHON_DISCOVERY_TIMEOUT_SEC * 10);
         for (int attempt = 0; attempt < attempts; attempt++) {
+            java.util.Optional<ProcessHandle> pidFileProcess = findPythonFromPidFile(definition);
+            if (pidFileProcess.isPresent()) {
+                log.info("PID 파일로 Python 프로세스 확인: pid={}, pidFile={}",
+                        pidFileProcess.get().pid(), pidFile(definition));
+                return pidFileProcess;
+            }
             java.util.Optional<ProcessHandle> child = findDescendant(controlHandle);
             if (child.isPresent()) {
                 return child;
@@ -473,6 +482,34 @@ public class DefaultProcessManager implements ProcessManager {
             sleepMillis(100);
         }
         return java.util.Optional.empty();
+    }
+
+    private java.util.Optional<ProcessHandle> findPythonFromPidFile(ModelProcess definition) {
+        Path pidPath = pidFile(definition).toPath();
+        if (!Files.isRegularFile(pidPath)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            String value = Files.readString(pidPath).trim();
+            long pid = Long.parseLong(value);
+            java.util.Optional<ProcessHandle> process = ProcessHandle.of(pid)
+                    .filter(ProcessHandle::isAlive)
+                    .filter(this::isPython);
+            if (process.isEmpty()) {
+                log.warn("PID 파일의 프로세스가 Python 실행 중이 아님: pid={}, pidFile={}",
+                        pid, pidPath);
+            }
+            return process;
+        } catch (NumberFormatException ex) {
+            log.warn("PID 파일 값이 숫자가 아님: pidFile={}", pidPath);
+        } catch (IOException ex) {
+            log.warn("PID 파일을 읽을 수 없음: pidFile={}", pidPath, ex);
+        }
+        return java.util.Optional.empty();
+    }
+
+    private File pidFile(ModelProcess definition) {
+        return new File(projectDirectory(definition), ".agent.pid");
     }
 
     private java.util.Optional<ProcessHandle> findPythonByProjectPath(String projectPath) {

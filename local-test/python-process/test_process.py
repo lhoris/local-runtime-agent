@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
-PID_FILE = PROJECT_DIR / "python_process.pid"
+PID_FILE = PROJECT_DIR / ".agent.pid"
 LOG_FILE = PROJECT_DIR / "python_process.log"
 running = True
 
