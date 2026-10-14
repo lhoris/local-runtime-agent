@@ -684,7 +684,10 @@ public class DefaultProcessManager implements ProcessManager {
 
     private boolean matchesDefinition(ProcessHandle handle, ModelProcess definition) {
         String commandLine = handle.info().commandLine().map(this::normalize).orElse("");
-        String configuredCommand = normalize(definition.getPythonCommand());
+        String configuredCommand = normalize(readPythonCommandFromStartScript(definition));
+        if (configuredCommand.isBlank()) {
+            configuredCommand = normalize(definition.getPythonCommand());
+        }
         boolean commandMatched = !configuredCommand.isBlank()
                 && matchesCommand(commandLine, configuredCommand);
         String projectPath = normalize(definition.getPythonProjectPath());
