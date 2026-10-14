@@ -63,6 +63,17 @@ public class DefaultProcessManager implements ProcessManager {
             }
         }
 
+        if (mp.getProcess() == null && mp.getPid() != null && !isPythonProcess(mp.getPid())) {
+            log.warn("DB에 저장된 PID가 Python 프로세스가 아님: modelProcessId={}, pid={}", modelId, mp.getPid());
+            java.util.Optional<ProcessHandle> recovered = findExistingPythonProcess(definition);
+            if (recovered.isPresent()) {
+                mp.setPid(toInt(recovered.get().pid()));
+                log.info("실제 Python PID로 복구: modelProcessId={}, pid={}", modelId, recovered.get().pid());
+            } else {
+                mp.setPid(null);
+            }
+        }
+
         boolean alive = mp.isAlive();
         log.info("PID 생존 여부 확인: modelProcessId={}, pid={}, alive={}, 현재상태={}",
                 modelId, mp.getPid(), alive, mp.getState());
@@ -149,7 +160,7 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
 
-        java.util.Optional<ProcessHandle> match = findMatchingProcess(definition);
+        java.util.Optional<ProcessHandle> match = findExistingPythonProcess(definition);
         if (match.isEmpty()) {
             throw new IllegalStateException(
                 "No running local process matched the configured project directory for " + modelId);
@@ -420,13 +431,29 @@ public class DefaultProcessManager implements ProcessManager {
         return managed;
     }
 
-    private java.util.Optional<ProcessHandle> findMatchingProcess(ModelProcess definition) {
+    private java.util.Optional<ProcessHandle> findExistingPythonProcess(ModelProcess definition) {
+        java.util.Optional<ProcessHandle> pidFileProcess = findPythonFromPidFile(definition);
+        if (pidFileProcess.isPresent()) {
+            return pidFileProcess;
+        }
+        java.util.Optional<ProcessHandle> commandProcess = findPythonByCommand(definition);
+        if (commandProcess.isPresent()) {
+            return commandProcess;
+        }
         String projectPath = normalize(definition.getPythonProjectPath());
         return ProcessHandle.allProcesses()
+            .filter(this::isPython)
             .filter(handle -> java.util.Arrays.stream(handle.info().arguments().orElse(new String[0]))
                 .map(this::normalize)
                 .anyMatch(argument -> argument.contains(projectPath)))
             .findFirst();
+    }
+
+    private boolean isPythonProcess(Integer pid) {
+        return pid != null && ProcessHandle.of(pid)
+                .filter(ProcessHandle::isAlive)
+                .filter(this::isPython)
+                .isPresent();
     }
 
     /** Store the Python child PID instead of the cmd.exe wrapper PID. */
