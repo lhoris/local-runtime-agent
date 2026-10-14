@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS TB_M26_MODEL_PROCESS (
     AUTOMATION_NAME VARCHAR(256) COMMENT '자동화 이름',
     PROCESS_AREA_CODE VARCHAR(64) COMMENT '프로세스 영역 코드',
     PYTHON_PROJECT_PATH VARCHAR(512) COMMENT 'start.bat, stop.bat, restart.bat가 있는 Python 프로젝트 경로',
+    PYTHON_COMMAND VARCHAR(1024) COMMENT '실행 중인 Python 프로세스 식별용 명령줄(예: main.py --port 9001)',
     PROCESS_STATUS VARCHAR(32) COMMENT '프로세스 실행 상태',
     MONITORING_STATUS VARCHAR(32) COMMENT '프로세스 모니터링 상태',
     CONTROL_STATUS VARCHAR(32) COMMENT '프로세스 제어 상태',

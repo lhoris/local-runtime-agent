@@ -1,0 +1,14 @@
+-- 기존 TB_M26_MODEL_PROCESS에 Python 프로세스 식별 명령줄을 추가합니다.
+-- 기존 데이터는 보존됩니다.
+
+ALTER TABLE TB_M26_MODEL_PROCESS
+    ADD COLUMN IF NOT EXISTS PYTHON_COMMAND VARCHAR(1024)
+        COMMENT '실행 중인 Python 프로세스 식별용 명령줄(예: main.py --port 9001)'
+        AFTER PYTHON_PROJECT_PATH;
+
+SELECT MODEL_PROCESS_ID,
+       PYTHON_PROJECT_PATH,
+       PYTHON_COMMAND,
+       PROCESS_PID,
+       PROCESS_STATUS
+FROM TB_M26_MODEL_PROCESS;

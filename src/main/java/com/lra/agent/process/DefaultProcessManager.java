@@ -111,6 +111,7 @@ public class DefaultProcessManager implements ProcessManager {
         mp.setErrorMessage(null);
         transition(mp, ProcessState.STARTING);
         try {
+            removeStalePidFile(definition);
             log.info("START 명령 실행: modelProcessId={}, start.bat 호출", modelId);
             Process process = runControlScript(definition, "start.bat");
             attachStartedPythonProcess(mp, definition, process);
@@ -226,6 +227,7 @@ public class DefaultProcessManager implements ProcessManager {
             return;
         }
         try {
+            removeStalePidFile(definition);
             log.info("RESTART 명령 실행: modelProcessId={}, oldPid={}, restart.bat 호출",
                     modelId, mp.getPid());
             Process process = runControlScript(definition, "restart.bat", scriptArguments(mp.getPid()));
@@ -471,6 +473,12 @@ public class DefaultProcessManager implements ProcessManager {
                         pidFileProcess.get().pid(), pidFile(definition));
                 return pidFileProcess;
             }
+            java.util.Optional<ProcessHandle> commandProcess = findPythonByCommand(definition);
+            if (commandProcess.isPresent()) {
+                log.info("DB Python 명령줄로 프로세스 확인: pid={}, pythonCommand={}",
+                        commandProcess.get().pid(), definition.getPythonCommand());
+                return commandProcess;
+            }
             java.util.Optional<ProcessHandle> child = findDescendant(controlHandle);
             if (child.isPresent()) {
                 return child;
@@ -482,6 +490,21 @@ public class DefaultProcessManager implements ProcessManager {
             sleepMillis(100);
         }
         return java.util.Optional.empty();
+    }
+
+    private java.util.Optional<ProcessHandle> findPythonByCommand(ModelProcess definition) {
+        String configuredCommand = definition.getPythonCommand();
+        if (configuredCommand == null || configuredCommand.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        String expected = normalize(configuredCommand);
+        return ProcessHandle.allProcesses()
+                .filter(handle -> isPython(handle)
+                        && handle.info().commandLine()
+                        .map(this::normalize)
+                        .map(commandLine -> commandLine.contains(expected))
+                        .orElse(false))
+                .findFirst();
     }
 
     private java.util.Optional<ProcessHandle> findPythonFromPidFile(ModelProcess definition) {
@@ -510,6 +533,13 @@ public class DefaultProcessManager implements ProcessManager {
 
     private File pidFile(ModelProcess definition) {
         return new File(projectDirectory(definition), ".agent.pid");
+    }
+
+    private void removeStalePidFile(ModelProcess definition) throws IOException {
+        Path pidPath = pidFile(definition).toPath();
+        if (Files.deleteIfExists(pidPath)) {
+            log.info("오래된 PID 파일 삭제: pidFile={}", pidPath);
+        }
     }
 
     private java.util.Optional<ProcessHandle> findPythonByProjectPath(String projectPath) {

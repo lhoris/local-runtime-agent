@@ -38,6 +38,10 @@ public class ModelProcess extends BaseAudit {
     @Column(name = "PYTHON_PROJECT_PATH", length = 512)
     private String pythonProjectPath;
 
+    /** Python script and arguments used to identify the actual process. */
+    @Column(name = "PYTHON_COMMAND", length = 1024)
+    private String pythonCommand;
+
     @Column(name = "AUTO_RESTART")
     private Boolean autoRestart;
 
@@ -133,6 +137,14 @@ public class ModelProcess extends BaseAudit {
 
     public void setPythonProjectPath(String pythonProjectPath) {
         this.pythonProjectPath = pythonProjectPath;
+    }
+
+    public String getPythonCommand() {
+        return pythonCommand;
+    }
+
+    public void setPythonCommand(String pythonCommand) {
+        this.pythonCommand = pythonCommand;
     }
 
     public Boolean getAutoRestart() {

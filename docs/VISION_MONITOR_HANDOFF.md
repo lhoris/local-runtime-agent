@@ -43,6 +43,7 @@ Agent가 `START`, `STOP`, `RESTART` 명령을 실행할 때 대상 모델 프로
 | `AUTOMATION_NAME` | 자동화 이름 |
 | `SERVER_IP` | 프로세스가 실행되는 서버 IP |
 | `PYTHON_PROJECT_PATH` | `start.bat`, `stop.bat`, `restart.bat`가 있는 Python 프로젝트 디렉터리 |
+| `PYTHON_COMMAND` | `.agent.pid`가 없을 때 실제 Python 프로세스를 찾기 위한 스크립트/인자 문자열 |
 | `PROCESS_STATUS` | 공통 프로세스 상태 |
 | `MONITORING_STATUS` | vision-monitor 기존 모니터링 상태 |
 | `CONTROL_STATUS` | vision-monitor 기존 제어 상태 |

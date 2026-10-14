@@ -26,6 +26,10 @@ Flyway is intentionally not used by this application. Database changes are appli
 - `TB_M26_MODEL_COMMAND.COMMAND_TYPE` maps to `<COMMAND_TYPE>.bat` in `PYTHON_PROJECT_PATH`.
 - `PROCESS_STATUS` is the shared lifecycle status column used by both applications.
 - `PYTHON_PROJECT_PATH` points to a project directory containing `start.bat`, `stop.bat`, and `restart.bat`.
+- `PYTHON_COMMAND` stores the script and arguments used to find the real Python process when `.agent.pid` is unavailable, for example `main.py --port 9001`.
+
+For an existing database, apply `add-python-command.sql` after taking a backup. It adds only
+`TB_M26_MODEL_PROCESS.PYTHON_COMMAND` and does not modify existing rows.
 
 All shared tables use the 14-column audit contract: `CREATED_*`, `LAST_UPDATED_*`, and `DATA_END_*`.
 

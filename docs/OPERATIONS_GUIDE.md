@@ -134,6 +134,7 @@ INSERT INTO TB_M26_MODEL_PROCESS (
     AGENT_ID,
     MODEL_NAME,
     PYTHON_PROJECT_PATH,
+    PYTHON_COMMAND,
     AUTO_RESTART,
     MAX_RESTART_ATTEMPTS,
     RESTART_DELAY_SEC,
@@ -145,6 +146,7 @@ INSERT INTO TB_M26_MODEL_PROCESS (
     @agent_id,
     'Example Python Model',
     'C:/models/example',
+    'test_process.py',
     TRUE,
     3,
     10,
@@ -170,6 +172,7 @@ SELECT MODEL_PROCESS_ID,
        AGENT_ID,
        MODEL_NAME,
        PYTHON_PROJECT_PATH,
+       PYTHON_COMMAND,
        PROCESS_STATUS,
        AUTO_RESTART
 FROM TB_M26_MODEL_PROCESS

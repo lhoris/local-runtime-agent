@@ -12,6 +12,16 @@ Agent가 Python 프로젝트를 제어하려면 `PYTHON_PROJECT_PATH` 아래에 
   .agent.pid          # 실행 중일 때 Python이 생성
 ```
 
+`TB_M26_MODEL_PROCESS.PYTHON_COMMAND`에는 `start.bat` 전체 내용이 아니라
+실제 Python 프로세스를 식별할 수 있는 명령줄을 저장합니다.
+
+```text
+main.py --port 9001
+```
+
+Agent는 `.agent.pid`를 먼저 확인하고, PID 파일이 없을 때
+`PYTHON_COMMAND`가 실제 Python 프로세스 명령줄에 포함되는지 확인합니다.
+
 ## Agent와 스크립트의 약속
 
 1. `start.bat`은 Python 프로세스를 foreground로 실행해야 합니다.
@@ -35,7 +45,7 @@ Python을 foreground로 실행해야 합니다.
 setlocal
 cd /d "%~dp0"
 
-py -3 main.py
+py -3 main.py --port 9001
 set "EXIT_CODE=%ERRORLEVEL%"
 
 if not "%EXIT_CODE%"=="0" (
@@ -134,4 +144,3 @@ cmd.exe /c start.bat
 cmd.exe /c stop.bat 49200
 cmd.exe /c restart.bat 49200
 ```
-
